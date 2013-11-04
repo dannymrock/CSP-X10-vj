@@ -141,14 +141,16 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	    return Place.FIRST_PLACE;
 	}
 	/**
-	 *  get Inter Place Vector
+	 *  get Inter Place Vector.This should be considered to have 
+	 * modified csp_ in place, if the return value is 1n (success).
+	 * If the return value is -1n (fail), csp_ will not be changed.
 	 * 
 	 */
-	public def getIPVector(csp : ModelAS(sz), myCost : Int) : Int{
+	public def getIPVector(csp_ : ModelAS(sz), myCost : Int) : Int{ // csp renamed csp_ to avoid issue with codegen in managed backend
 		val place:Place=communicationTarget();
 		val a = at(place) solvers().comm.getRemoteData();
 		if ( a!=null && (myCost + delta) > a().cost ){					 
-		    csp.setVariables(a().vector);
+		    csp_.setVariables(a().vector);
 		    return 1n; 	// success
 		}
 		return -1n;

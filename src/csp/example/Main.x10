@@ -21,7 +21,7 @@ public class Main {
 	//static val param = GlobalRef[Parameters](new Parameters());
     public static struct CSPProblem(kind:Int) {
         public def make(size:Long, vectorSize:Long, seed:Long):ModelAS(vectorSize) {
-            if (kind==MAGIC_SQUARE_PROBLEM) return new MagicSquareAS(size, vectorSize, seed);
+            if (kind==MAGIC_SQUARE_PROBLEM) return new MagicSquareAS(size as Int, vectorSize, seed);
             if (kind==COSTAS_PROBLEM) return new CostasAS(vectorSize, seed);
             if (kind==ALL_INTERVAL_PROBLEM) return new AllIntervalAS(vectorSize, seed, true);
             if (kind==LANGFORD_PROBLEM) return new LangfordAS(size, vectorSize, seed);

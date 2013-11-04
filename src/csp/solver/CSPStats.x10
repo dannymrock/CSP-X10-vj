@@ -5,6 +5,10 @@ import csp.util.*;
 /** CSPStats
  * 	This class implements a container for the CSP solver statistics. 
  * 
+ * <p> Methods may be invoked concurrently, at the place recording
+ * stats for the overall execution. A monitor is used internally to provide
+ * atomic access to the mutable state on this calss.
+ * 
  * 	@author Danny Munera
  *  @version 0.1 April 12, 2013 -> First Version
  */
@@ -35,6 +39,7 @@ public class CSPStats{
 	/** number of restarts */  
 	var forceRestart : Int=0n;
 	 
+	val monitor = new Monitor();
 	
 	/**
 	 * 	Set statistics to the object
@@ -49,33 +54,39 @@ public class CSPStats{
 	 */
 	public def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, 
 			fr : Int){
-		this.cost = co;
-		this.team = p;
-		this.explorer = e;
-		this.time = t;
-		this.iters = it;
-		this.locmin = loc;
-		this.swaps = sw;
-		this.reset = re;
-		this.same = sa;
-		this.restart = rs;
-		this.change = ch;
-		this.forceRestart = fr;
+	    monitor.atomicBlock(()=> {
+	        this.cost = co;
+	        this.team = p;
+	        this.explorer = e;
+	        this.time = t;
+	        this.iters = it;
+	        this.locmin = loc;
+	        this.swaps = sw;
+	        this.reset = re;
+	        this.same = sa;
+	        this.restart = rs;
+	        this.change = ch;
+	        this.forceRestart = fr;
+	        Unit()
+	    });
 	}
 	/**
 	 *  Accumulate statistics in this object, Is used for average calculation
 	 * 	@param stats Object with solver data to accumulate 
 	 */
 	public def accStats(stats:CSPStats){
-		this.time += stats.time;
-		this.iters += stats.iters;
-		this.locmin += stats.locmin;
-		this.swaps += stats.swaps;
-		this.reset += stats.reset;
-		this.same += stats.same;
-		this.restart += stats.restart;
-		this.change += stats.change;
-		this.forceRestart += stats.forceRestart; 
+	    monitor.atomicBlock(() => {
+	        this.time += stats.time;
+	        this.iters += stats.iters;
+	        this.locmin += stats.locmin;
+	        this.swaps += stats.swaps;
+	        this.reset += stats.reset;
+	        this.same += stats.same;
+	        this.restart += stats.restart;
+	        this.change += stats.change;
+	        this.forceRestart += stats.forceRestart; 
+	        Unit()
+	    });
 	}
 	
 	/**

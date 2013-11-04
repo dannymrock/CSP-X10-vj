@@ -2,10 +2,15 @@ package csp.solver;
 
 import csp.util.*;
 
+/**
+ * Mainatain a poolSize set of best partial solutions. These
+ * can be queried by other places.
+ * 
+ */
 
 public class CommData(sz:Long, poolSize:Int) {
 	var nbEntries : Int = 0n;
-	val bestPartialSolutions = new Rail(poolSize, CSPSharedUnit(sz,0n as Int,null,0n as Int));
+	val bestPartialSolutions = new Rail(poolSize, CSPSharedUnit(sz,0n as Int,null,0n as Int)); // dummy value
 	var bestCost : Int = Int.MAX_VALUE;
 	var worstCost : Int = Int.MAX_VALUE;
 	val random = new RandomTools(123L);
@@ -98,9 +103,12 @@ public class CommData(sz:Long, poolSize:Int) {
 	  monitor.atomicBlock(()=>nbEntries==0n? null : new Maybe(bestPartialSolutions(random.randomInt(nbEntries))));
 		
 	public def clear(){
-		nbEntries = 0n;
-		bestCost = Int.MAX_VALUE;
-		worstCost = Int.MAX_VALUE;
+	    monitor.atomicBlock(()=> {
+	        nbEntries = 0n;
+	        bestCost = Int.MAX_VALUE;
+	        worstCost = Int.MAX_VALUE;
+	        Unit()
+	    });
 	}
 	
 }
