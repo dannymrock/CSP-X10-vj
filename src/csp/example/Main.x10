@@ -2,6 +2,7 @@ package csp.example;
 
 import csp.solver.*;
 import csp.util.*;
+import x10.util.Team;
 
 /** Main
  * 	Main class of the project. 
@@ -17,8 +18,7 @@ import x10.util.Option;
 import x10.util.Random;
 
 public class Main {
-	//static val paramObj = new Parameters();
-	//static val param = GlobalRef[Parameters](new Parameters());
+
     public static struct CSPProblem(kind:Int) {
         public def make(size:Long, vectorSize:Long, seed:Long):ModelAS(vectorSize) {
             if (kind==MAGIC_SQUARE_PROBLEM) return new MagicSquareAS(size as Int, vectorSize, seed);
@@ -28,14 +28,7 @@ public class Main {
             return new PartitAS(vectorSize, seed);
         }
     }
-    /*
-     * 
-     (param == 1n)? new MagicSquareAS(size, vectorSz, seed):
-         (cspProblem == 2n) ? new CostasAS(size, seed) : 
-             (cspProblem == 3n) ? new AllIntervalAS(size, seed, true) :
-                 (cspProblem == 4n) ? new LangfordAS(size, seed) :
-                     new PartitAS(sz, seed);
-                 */
+ 
     public static val UNKNOWN_PROBLEM=0n;
 	public static val MAGIC_SQUARE_PROBLEM = 1n;
 	public static val COSTAS_PROBLEM = 2n;
@@ -118,8 +111,8 @@ public class Main {
 		
 		// communication interval = 10
 		val vectorSz=vectorSize;
-		val solvers = PlaceLocalHandle.make[ASSolverPermutRW(vectorSz)](PlaceGroup.WORLD, 
-		        ()=>new ASSolverPermutRW(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ASSolverPermutRW(vectorSz)); 
+		val solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
+		        ()=>new ASSolverPermutRW(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz)); 
 	//	val solverT = new CooperativeMW(intraTI, interTI, threads, poolSize, nodesPTeam, minDistance);
 
 		if (solverMode == 0n){
@@ -148,18 +141,21 @@ public class Main {
 			val cspGen=():ModelAS(vectorSz)=> CSPProblem(problem).make(size as Long, vectorSz, seed);
 			
 			//if (solverMode == 0n){ 
-				PlaceGroup.WORLD.broadcastFlat(()=>{solvers().solve(solvers, cspGen);});
+		
+				PlaceGroup.WORLD.broadcastFlat(()=>{
+				    solvers().solve(solvers, cspGen);
+				    });
 			//}else{
 		//		stats = solverT.solve(size,param);
 			//}
 			//accStats.accStats(stats);
 			Console.OUT.printf("\r");
 			solvers().printStats(j);
-			accStats.printAVG(j);
+			solvers().printAVG(j);
 			Console.OUT.flush();
-			
-			//clean solver
-			
+			PlaceGroup.WORLD.broadcastFlat(()=>{
+			    solvers().clear();
+			});
 		}
 		Console.OUT.printf("\r");
 		Console.OUT.println("|-----|----------|----------|-------|----------|----------|----------|-------|-----|-------|-----|");

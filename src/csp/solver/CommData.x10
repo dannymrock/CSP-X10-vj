@@ -14,7 +14,7 @@ public class CommData(sz:Long, poolSize:Int) {
 	var bestCost : Int = Int.MAX_VALUE;
 	var worstCost : Int = Int.MAX_VALUE;
 	val random = new RandomTools(123L);
-	val monitor = new Monitor();
+	val monitor = new Monitor("CommData");
 	
 	public def isGoodCost(cost : Int) : Boolean {
 		if (nbEntries == 0n) return true;
@@ -24,15 +24,19 @@ public class CommData(sz:Long, poolSize:Int) {
 		}
 		return false;
 	}
+	/**
+	 * Insert a copy of variables in the best partial solutions. Intended to be 
+	 * invoked by solvers running at remote places.
+	 * Note: Check that all calls are from remote places. If so the copy of
+	 * variables will already have happened.
+	 */
 	public def tryInsertVector(cost:Int, variables:Rail[Int]{self.size==sz}, place:Int) {
 	    monitor.atomicBlock(()=>tryInsertVector0(cost,variables,place));
 	}
-	public def tryInsertVector0( cost : Int , variables : Rail[Int]{self.size==sz}, place : Int ):Unit {
+	protected def tryInsertVector0( cost : Int , variables : Rail[Int]{self.size==sz}, place : Int ):Unit {
 		
 		if (cost >= worstCost) return Unit();
 
-		var i : Int;
-		//Console.OUT.println("in");
 		if( nbEntries < poolSize ){
 			//insert in the last place
 			//Console.OUT.println("insert cost "+cost);
@@ -52,7 +56,7 @@ public class CommData(sz:Long, poolSize:Int) {
 			var nvic : Int = 0n;
 			var costToChange : Int = cost;
 			
-			for (i = 0n; i < nbEntries; i++){
+			for (i in 0n..(nbEntries-1n)){
 				if (worstCost == bestPartialSolutions(i).cost){
 					if (random.randomInt(++nvic) == 0n)
 						victim = i;
@@ -64,7 +68,7 @@ public class CommData(sz:Long, poolSize:Int) {
 				}
 			}	
 			//Console.OUT.println("insert vector with cost "+cost);	
-			bestPartialSolutions(victim) = new CSPSharedUnit( variables.size, cost, Utils.copy(variables), place);
+			bestPartialSolutions(victim) = new CSPSharedUnit(variables.size, cost, Utils.copy(variables), place);
 			
 			if (cost <= bestCost){ 
 				bestCost = cost;
@@ -76,17 +80,20 @@ public class CommData(sz:Long, poolSize:Int) {
 	}
 	
 	
-	public def compareVectors (vec1 : Rail[Int], vec2 : Rail[Int]):Boolean{
+	public static def compareVectors (vec1 : Rail[Int], vec2 : Rail[Int]):Boolean{
 		for (i in 0..( vec1.size-1))
 			if(vec1(i) != vec2(i)) return false;
 		return true;
 	}
 	
 	public def updateWorstCost(){
-		var wc : Int = 0n;
-		for(i in 0..(nbEntries-1))
-			if (bestPartialSolutions(i).cost > wc) wc = bestPartialSolutions(i).cost; 
-		worstCost = wc;	
+	    monitor.atomicBlock(()=> {
+	        var wc : Int = 0n;
+	        for(i in 0..(nbEntries-1))
+	            if (bestPartialSolutions(i).cost > wc) wc = bestPartialSolutions(i).cost; 
+	        worstCost = wc;	
+	        Unit()
+	    });
 	}
 	
 	public def printVectors(){
@@ -100,7 +107,13 @@ public class CommData(sz:Long, poolSize:Int) {
 	 * Get some vector from the best solutions.
 	 */
 	public def getRemoteData():Maybe[CSPSharedUnit(sz)]=
-	  monitor.atomicBlock(()=>nbEntries==0n? null : new Maybe(bestPartialSolutions(random.randomInt(nbEntries))));
+	  monitor.atomicBlock(()=> {
+	      if (nbEntries < 1n) return null;
+	      val index = random.randomInt(nbEntries);
+	      if (index >= nbEntries) Console.OUT.println("Golden: index is " + index + " needed to be < " + nbEntries);
+	    return new Maybe(bestPartialSolutions(index));
+	  });
+	  
 		
 	public def clear(){
 	    monitor.atomicBlock(()=> {

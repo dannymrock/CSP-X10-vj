@@ -15,10 +15,11 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	public static USE_ACTIVITIES  = 0n; 
 	public static USE_PLACES  = 1n;
 	
-	public static ALL_TO_ZERO = 0n;
-	public static ALL_TO_ALL = 1n;
-	public static ALL_TO_NEIGHBORS = 2n;
-	public static ALL_TO_GROUP = 3n;
+	public static NO_COMM = 0n;
+	public static ALL_TO_ZERO = 1n;
+	public static ALL_TO_ALL = 2n;
+	public static ALL_TO_NEIGHBORS = 3n;
+	public static ALL_TO_GROUP = 4n;
 	
 	/** Solver use activities or places */
 	var solverMode : Int;
@@ -44,9 +45,9 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	/**
 	 * The reference to all team members, for communication.
 	 */
-	val solvers:PlaceLocalHandle[ASSolverPermutRW(sz)];
+	val solvers:PlaceLocalHandle[ParallelSolverI(sz)];
 	
-	def this( sz:Long, solverModeIn : Int , ss: PlaceLocalHandle[ASSolverPermutRW(sz)], // commR : GlobalRef[CommData{self.sz==sz}], 
+	def this( sz:Long, solverModeIn : Int , ss: PlaceLocalHandle[ParallelSolverI(sz)], // commR : GlobalRef[CommData{self.sz==sz}], 
 	        intraTeamI : Int, interTeamI : Int , cOption : Int , ps : Int, nG : Int){
 		property(sz, ps);
 		solvers = ss;
@@ -58,7 +59,7 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 		//refCommDist = commD ;
 		noGroups = nG;
 		myGroupId = here.id as Int % noGroups;
-		delta = 0n;
+		
 		
 		//Console.OUT.println("I'm "+here.id+ " and my group is "+myGroupId);
 	}
@@ -72,36 +73,38 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	 * 	communicate the vector if Searching thread totalCost is better than worstCost in the pool
 	 *  @return 0 if good cost, -1 if bad cost
 	 */
-	public def communicate( totalCost : Int, variables : Rail[Int]{self.size==sz} ) : Int {
-	    if (commOption==0n) return 0n;
+	public def communicate(totalCost : Int, variables : Rail[Int]{self.size==sz} ) : Int {
+	    if (commOption==NO_COMM) { 
+	        return 0n;
+	    }
+	    Logger.debug(()=>" communicate: entering.");
 	    if (solverMode == USE_PLACES) {
 	        /************************** Comm Places *******************************/
 	        //Console.OUT.println("Solver Mode USE_PLACES, communication interval= "+commI);
 	        val placeid = here.id as Int;
+	        val ss = solvers;
 	        //val variables = csp.variables; 
 	        
 	        // All-to-one place 0
 	        if (commOption == ALL_TO_ZERO){
 	            //Console.OUT.println("All-to-one");
-	            at(Place(0)) solvers().comm.tryInsertVector( totalCost , variables, placeid); 
+	            at(Place(0)) ss().tryInsertVector( totalCost , variables, placeid); 
 	        }else if(commOption == ALL_TO_ALL){
 	            // All-to-All	
 	            //Console.OUT.println("All-to-all");
 	            for (p in Place.places()) 
-	                if (here != p) {
-	                    at(p) async 
-	                    solvers().comm.tryInsertVector( totalCost , variables, placeid);
-	                }
+	                if (here != p) 
+	                    at(p) async ss().tryInsertVector( totalCost , variables, placeid);
 	        }else if (commOption == ALL_TO_NEIGHBORS){ 
 	            //Neighbors
 	            //Console.OUT.println("Neighbors");
 	            val placeup = here.id + 1;
 	            val placedown = here.id  - 1;
 	            if (placeup < Place.MAX_PLACES){
-	                at(Place(placeup)) async solvers().comm.tryInsertVector( totalCost , variables, placeid);
+	                at(Place(placeup)) async ss().tryInsertVector( totalCost , variables, placeid);
 	            }
 	            if (placedown >= 0L){
-	                at(Place(placeup)) async solvers().comm.tryInsertVector( totalCost , variables, placeid);
+	                at(Place(placeup)) async ss().tryInsertVector( totalCost , variables, placeid);
 	            }
 	        } /* vj: Not sure what is going on here yet.
 	         * else if(commOption == ALL_TO_GROUP){
@@ -146,22 +149,29 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	 * If the return value is -1n (fail), csp_ will not be changed.
 	 * 
 	 */
-	public def getIPVector(csp_ : ModelAS(sz), myCost : Int) : Int{ // csp renamed csp_ to avoid issue with codegen in managed backend
-		val place:Place=communicationTarget();
-		val a = at(place) solvers().comm.getRemoteData();
+	public def getIPVector(csp_ : ModelAS(sz), myCost : Int):Boolean { // csp renamed csp_ to avoid issue with codegen in managed backend
+		if (commOption == NO_COMM) return false;
+		Logger.debug(()=> " getIPVector: entering.");
+	    val place:Place=communicationTarget();
+		val ss=solvers;
+		val a = at(place) ss().getRemoteData();
 		if ( a!=null && (myCost + delta) > a().cost ){					 
 		    csp_.setVariables(a().vector);
-		    return 1n; 	// success
+		    return true; 
 		}
-		return -1n;
+		return false;
 	}
 	
 	
-	public def getWorstCostInPool():Int = at(communicationTarget()) solvers().comm.worstCost;
+	public def getWorstCostInPool():Int = {
+	    val ss=solvers;
+	    at(communicationTarget()) ss().worstCost()
+	}
 	
 	
 	public def restartPool():void {
-	    at(communicationTarget()) solvers().comm.clear();
+	    val ss = solvers;
+	    at(communicationTarget()) ss().clear();
 	}
 	
 	

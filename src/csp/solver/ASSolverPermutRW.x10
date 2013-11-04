@@ -18,7 +18,8 @@ import csp.solver.ASSolverPermut;
 import x10.util.Random;
 
 import x10.array.*;
-import x10.compiler.Inline; 
+import x10.compiler.Inline;
+import x10.util.concurrent.AtomicBoolean; 
 
 /**
  * Each place has solvers, a PlaceLocalHandle[ASSolverPermutRW(sz)].
@@ -45,9 +46,8 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	val commOption : Int;
 	
 	var bcost : Int;
-	public val stats  = new CSPStats();
-	val accStats = new CSPStats();
-	
+	var stats:CSPStats = null;
+	var accStats:CSPStats = null;
 	/** Comunication Variables*/
 	val comm = new CommData( sz, poolSize ); 
 	val thEnable : Int; 
@@ -81,8 +81,11 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	 * 	@param cspProblem code with the problem to be solved (1 for Magic Square Problems, other number for Queens Problem)
 	 * 	@return cost of the solution
 	 */
-	public def solve(st:PlaceLocalHandle[ASSolverPermutRW(sz)], cspGen:()=>ModelAS(sz) ) : CSPStats { 
+	public def solve(st:PlaceLocalHandle[ParallelSolverI(sz)], cspGen:()=>ModelAS(sz) ):void { 
+	    Logger.debug("Starting solve iteration.");
 	    val solvers=st;
+	    stats = new CSPStats();
+	    accStats = new CSPStats();
 	    assert solvers() == this : "Whoa, basic plumbing problem -- I am not part of solvers!";
 		val size = sz as Int;
 		var extTime : Long = -System.nanoTime();
@@ -94,7 +97,6 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 
 		csp_ = cspGen(); // use the supplied generator to generate the problem
 		
-	
 		conf = new ASSolverConf(sz, 1n /*ASSolverConf.USE_PLACES*/, solvers, updateI,0n, commOption, poolSize, nTeams );
 		val ss = st() as ParallelSolverI(sz);
 		solver = new ASSolverPermut(sz, nsize, seed, ss);
@@ -110,42 +112,57 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		if (cost == 0n){ 
 		    // A solution has been found! Huzzah! 
 		    // Light the candles! Kill the blighters!
-		    
-		    
-		    for (k in Place.places()) 
-		        if (here.id != k.id) 
-		            at(k) async solvers().kill();
+		    val home=here.id;
+		    val winner = at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
 		    winPlace = here;
 		    bcost = cost;
-		    setStats(solvers);
-		    Utils.show("Solution ", csp_.variables);
+		 
+		    if (winner) {
+		        setStats(solvers);
+		        Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
+		    }
 		}
 		extTime += System.nanoTime();
 		stats.time = extTime/1e9;
-		clear();
-		return stats; 
+		val stats_=stats;
+		Logger.debug(()=> "updating accStats");
+		
+		// accumulate results in place 0, need a better way at scale.
+		at (Place.FIRST_PLACE)  st().accStats(stats_);
+		
+		Logger.debug(()=> "updating accStats done.");
 	}
 	
-	@Inline public def getIPVector(csp_ : ModelAS(sz), myCost : Int) : Int 
+	
+	@Inline public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean 
 	  = conf.getIPVector(csp_, myCost);
-	@Inline public def communicate(totalCost:Int, variables:Rail[Int]{self.size==sz} ) : Int
+	@Inline public def communicate(totalCost:Int, variables:Rail[Int]{self.size==sz} ):Int
 	  = conf.communicate(totalCost, variables);
 	
 	@Inline public def intraTI():Int = conf.intraTI;
 	@Inline public def restartPool():void { conf.restartPool();}
 	
-	val monitor = new Monitor();
+	val monitor = new Monitor("ASSolverPermutRW");
 	public def kill() {
-	    monitor.atomicBlock(() => {
 	        solver.kill=true;
-	        Unit()
-	    });
+	}
+	val winnerLatch = new AtomicBoolean(false);
+	public def announceWinner(ss:PlaceLocalHandle[ParallelSolverI(sz)], p:Long):Boolean {
+	    val result = winnerLatch.compareAndSet(false, true);
+	   
+	  // Logger.info(()=> "announceWinner result=" + result + " for " + p + " this=" + this );
+	    if (result) {
+	         for (k in Place.places()) 
+	            if (p != k.id) 
+	                at(k) async ss().kill();
+	    }
+	    return result;
 	}
 	/**
 	 * Called by winning place to set the stats at place zero so they
 	 * can be printed out.
 	 */
-	def setStats(ss:PlaceLocalHandle[ASSolverPermutRW(sz)]  ){
+	def setStats(ss:PlaceLocalHandle[ParallelSolverI(sz)]  ){
 		val winPlace = here.id;
 		//val time = (timeDist(winPlace))/1e9;
 		val iters = solver.nbIterTot;
@@ -158,13 +175,30 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		
 		
 		at (Place.FIRST_PLACE) 
-		  ss().stats.setStats(0n, winPlace as Int, 0n, 0n, iters, locmin, swaps, reset, same, restart, change,0n);
+		  ss().setStats(0n, winPlace as Int, 0n, 0n, iters, locmin, swaps, reset, same, restart, change,0n);
 		//val winstats = new CSPStats
+	}
+	public def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, 
+	        fr : Int) {
+	    stats.setStats(co, p, e, t, it, loc, sw, re, sa, rs, ch, fr);
 	}
 	public def printStats(count:Int):void {
 	    stats.print(count);
 	}
-	
-	public def clear(){comm.clear();}
+	public def printAVG(count:Int):void {
+	    accStats.printAVG(count);
+	}
+	public def tryInsertVector(cost:Int, variables:Rail[Int]{self.size==sz}, place:Int) {
+	    comm.tryInsertVector(cost, variables, place);
+	}
+	public def getRemoteData():Maybe[CSPSharedUnit(sz)]=comm.getRemoteData();
+	public def worstCost()=comm.worstCost;
+	public def clear(){
+	    winnerLatch.set(false);
+	    comm.clear();
+	    }
+	public def accStats(c:CSPStats):void {
+	    accStats.accStats(c);
+	}
 }
 public type ASSolverPermutRW(s:Long)=ASSolverPermutRW{self.sz==s};

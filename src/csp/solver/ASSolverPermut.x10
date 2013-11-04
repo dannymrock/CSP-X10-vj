@@ -15,7 +15,7 @@ import x10.util.Random;
  * 	
  */
 
-public class ASSolverPermut(sz:Long, size:Int, seed:Long, solvers:ParallelSolverI(sz)) {
+public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI(sz)) {
 
     val mark = new Rail[Int] (size, 0n); 
 	val solverP = new ASSolverParameters();
@@ -146,7 +146,7 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solvers:ParallelSolver
 					best_cost = total_cost = csp_.costOfSolution(1n);
 					best_of_best = x10.lang.Int.MAX_VALUE ;
 					//restart pool?
-					solvers.restartPool();
+					solver.clear();
 					//Console.OUT.println("Restart...");
 					continue;
 				}
@@ -165,8 +165,7 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solvers:ParallelSolver
 			
 			//Console.OUT.println("----- iter no: "+nbIter+", cost: "+total_cost+", nb marked: "+nb_var_marked+" ---, nb_swap= "+nbSwap);
 			
-			if (total_cost != new_cost)
-			{
+			if (total_cost != new_cost) {
 				if (nb_in_plateau > 1n) {
 			 		//Console.OUT.println("end of plateau, length: "+ nb_in_plateau);
 			 	}
@@ -227,17 +226,20 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solvers:ParallelSolver
 			
 			// --- Interaction with other solvers -----
 	 		Runtime.probe();		// Give a chance to the other activities
-	 		if (kill)	break;		// Check if other place or activity have finished
+	 		if (kill)	{
+	 		    Logger.debug(" killed!");
+	 		    break;		// Check if other place or activity have finished
+	 		}
 	 	
 	 		
-	 		if (solvers.intraTI() != 0n) 
-	 		    if( nbIter % solvers.intraTI() == 0n ){
+	 		if (solver.intraTI() != 0n) 
+	 		    if( nbIter % solver.intraTI() == 0n ){
 	 		        //Console.OUT.println("In ");
 	 		        //Chang//
-	 		        val res = solvers.communicate( total_cost, csp_.variables); 
+	 		        val res = solver.communicate( total_cost, csp_.variables); 
 	 		        if (random.randomInt(100n) < solverP.probChangeVector){
-	 		            val result = solvers.getIPVector(csp_, total_cost );
-	 		            if (result != -1n){
+	 		            val result = solver.getIPVector(csp_, total_cost );
+	 		            if (result){
 	 		                nbChangeV++;
 	 		                nbSwap += size ; //I don't know what happened here with costas reset
 	 		                mark.clear();
@@ -253,8 +255,8 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solvers:ParallelSolver
 	 		}
 	 		// ----- end of interaction with other solvers -----
 	 		
-	 		csp.util.Utils.show("new vector ",csp_.variables);
-		}
+	 		//csp.util.Utils.show("new vector ",csp_.variables);
+		} // while (totalCost != 0n)
 		
 		nbIterTot += nbIter;
 		nbResetTot += nbReset;	

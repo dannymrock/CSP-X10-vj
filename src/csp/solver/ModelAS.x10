@@ -45,7 +45,7 @@ public class ModelAS(sz:Long, seed:Long) {
 		solverParams.freezeSwap = 0n;
 		solverParams.resetLimit = length;
 		solverParams.resetPercent = 10n;
-		solverParams.restartLimit = 10000000n;
+		solverParams.restartLimit = 1000n; // 10000000n;
 		solverParams.restartMax = 0n;
 		solverParams.exhaustive = false;
 		solverParams.firstBest = false;
@@ -138,5 +138,6 @@ public class ModelAS(sz:Long, seed:Long) {
 	public def displaySolution() {
 		Utils.show("final",variables);
 	}
+	public def verified():Boolean=false;
 }
 public type ModelAS(s:Long)=ModelAS{self.sz==s};

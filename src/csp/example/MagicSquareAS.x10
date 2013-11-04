@@ -17,6 +17,7 @@ import csp.util.*;
  */
 
 import x10.util.Random;
+import x10.array.Array_2;
 public class MagicSquareAS(squareLength:Int) extends ModelAS{   
 	
 	val square_length_m1 = (squareLength-1n);
@@ -232,6 +233,28 @@ public class MagicSquareAS(squareLength:Int) extends ModelAS{
  			err_d2 += diff2;
  			err_d2_abs = Math.abs(err_d2);
  		}
+	}
+	
+	public  def verified():Boolean {
+	    val soln = Array_2.makeView(variables, squareLength as Long, squareLength as Long);
+	    val I=soln.numElems_1, J=soln.numElems_2;
+	    if (I != J) return false;
+	    var sum:Int=0n;
+	    for (j in 0..(J-1)) sum += soln(0, j);
+	    val result=sum;
+	    for (i in 0..(I-1)) { // row totals
+	        sum=0n; for (j in 0..(J-1)) sum += soln(i, j);
+	        if (sum != result) return false;
+	    }
+	    for (j in 0..(J-1)) { // col totals
+	        sum=0n; for (i in 0..(I-1)) sum += soln(i, j);
+	        if (sum != result) return false;
+	    }
+	   sum = 0n; for (i in 0..(I-1)) sum += soln(i,i); //diag
+	   if (sum != result) return false;
+	   sum = 0n; for (i in 0..(I-1)) sum += soln(i,I-1-i); //anti-diag
+	   if (sum != result) return false;
+	   return true;
 	}
 	/**
 	 *  Xref Class

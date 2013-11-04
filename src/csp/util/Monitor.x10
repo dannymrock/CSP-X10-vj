@@ -13,6 +13,9 @@ public class Monitor {
     protected val threads = new Rail[Worker](x10.lang.Runtime.MAX_THREADS);
     protected var size:Int = 0n;
     
+    val name:String;
+    public def this(){this("");}
+    public def this(n:String){name=n;}
     /**
      * When an activity blocks, its underlying thread will block, with FJ
      * scheduling. Therefore tell the runtime to ensure that there is another
@@ -62,25 +65,25 @@ public class Monitor {
     public def on[T](cond:()=>Boolean, action:()=>T):T {
         try {
             lock();
-            //Logger.debug(() => "Monitor: "+ this +  " 0 trying cond " + cond);
+            Logger.debug(() => "Monitor: "+ this +  " 0 trying cond " + cond);
             
             while (!cond()) {
                 val thisWorker = Runtime.worker();
                 val s = size;
                 threads(size++)=thisWorker; 
                 while(threads(s)==thisWorker) {
-                    //Logger.log(suspending);
+                    Logger.log(suspending);
                     unlock();
                     Worker.park();
-                    //Logger.debug(retrying);
+                    Logger.debug(retrying);
                     lock();
                 }
             }
-            //Logger.debug(()=>"Monitor: " + this  + " 1 action " + action);
+            Logger.debug(()=>"Monitor: " + this  + " 1 action " + action);
             val result=action();
             // now awaken everyone to try.
             val m=size;
-            //Logger.debug(() => "Monitor : " + this + " 2 awakening size=" + m);
+            Logger.debug(() => "Monitor : " + this + " 2 awakening size=" + m);
             for (var i:Int = 0n; i<m; ++i) {
                 size--;
                 //Logger.debug((i:Int)=> "Monitor: " + this + " 3 (" + i + ") waking " 
@@ -88,7 +91,7 @@ public class Monitor {
                 threads(size).unpark();
                 threads(size)=null;
             }
-            //Logger.debug(() => "Monitor: " + this + " 4 done.");
+            Logger.debug(() => "Monitor: " + this + " 4 done.");
             return result;
         } finally {
             unlock();
@@ -97,9 +100,11 @@ public class Monitor {
     static val waking = (t:String)=> "Monitor: waking " + t;
     static val trying = ()=>"Monitor: Trying cond ";
     static val retrying = ()=>"Monitor: Retrying cond ";
-    static val suspending = ()=>"Monitor: Suspending. ";
+    static val suspending = ()=>"Monitor:  Suspending. ";
     static val acting = ()=>"Monitor: Trying action.";
     static val finished = ()=>"Monitor: done";
+    
+    public def toString():String=name;
 }
 
 //struct Unit {}

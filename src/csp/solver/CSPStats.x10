@@ -39,7 +39,7 @@ public class CSPStats{
 	/** number of restarts */  
 	var forceRestart : Int=0n;
 	 
-	val monitor = new Monitor();
+	transient val monitor:Monitor  = new Monitor("CSPStats");
 	
 	/**
 	 * 	Set statistics to the object
@@ -106,6 +106,7 @@ public class CSPStats{
 	 * 	@param no total number of iterations
 	 */
 	public def printAVG(no:Int){ 
+	   // val no = no1 as Float;
 		val sameIter : Float = (same as Float)/(iters as Float);
 		val changeF : Float = (change as Float)/(no as Float);
 		Console.OUT.printf("| avg | %8.4f | %8d |  N/A  | %8d |",time/no, iters/no, locmin/no);
