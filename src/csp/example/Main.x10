@@ -159,7 +159,8 @@ public class Main {
 		}
 		Console.OUT.printf("\r");
 		Console.OUT.println("|-----|----------|----------|-------|----------|----------|----------|-------|-----|-------|-----|");
-		accStats.printAVG(testNo);
+		solvers().printAVG(testNo);
+		//accStats.printAVG(testNo);
 		Console.OUT.printf("\n");
 		
 		return;

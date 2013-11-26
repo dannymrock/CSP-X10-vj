@@ -63,7 +63,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	 */
 	public def this(vectorSize:Long, upI : Int, commOpt : Int , thread : Int , ps : Int, npT : Int ){
 	    property(vectorSize,ps);
-		
+	    accStats = new CSPStats();
 		updateI = upI; 
 		commOption = commOpt;
 		thEnable = thread;
@@ -85,7 +85,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	    Logger.debug("Starting solve iteration.");
 	    val solvers=st;
 	    stats = new CSPStats();
-	    accStats = new CSPStats();
+	   
 	    assert solvers() == this : "Whoa, basic plumbing problem -- I am not part of solvers!";
 		val size = sz as Int;
 		var extTime : Long = -System.nanoTime();
@@ -123,14 +123,14 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		    }
 		}
 		extTime += System.nanoTime();
-		stats.time = extTime/1e9;
-		val stats_=stats;
-		Logger.debug(()=> "updating accStats");
+		//stats.time = extTime/1e9;
+		//val stats_=stats;
+		//Logger.debug(()=> "updating accStats");
 		
 		// accumulate results in place 0, need a better way at scale.
-		at (Place.FIRST_PLACE)  st().accStats(stats_);
+		//at (Place.FIRST_PLACE)  st().accStats(stats_);
 		
-		Logger.debug(()=> "updating accStats done.");
+		//Logger.debug(()=> "updating accStats done.");
 	}
 	
 	
@@ -142,7 +142,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	@Inline public def intraTI():Int = conf.intraTI;
 	@Inline public def restartPool():void { conf.restartPool();}
 	
-	val monitor = new Monitor("ASSolverPermutRW");
+	val monitor = new Monitor("ASSolverPermutRW"); 
 	public def kill() {
 	        solver.kill=true;
 	}
@@ -164,7 +164,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	 */
 	def setStats(ss:PlaceLocalHandle[ParallelSolverI(sz)]  ){
 		val winPlace = here.id;
-		//val time = (timeDist(winPlace))/1e9;
+		val time = time/1e9;
 		val iters = solver.nbIterTot;
 		val locmin = solver.nbLocalMinTot;
 		val swaps = solver.nbSwapTot;
@@ -175,12 +175,13 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		
 		
 		at (Place.FIRST_PLACE) 
-		  ss().setStats(0n, winPlace as Int, 0n, 0n, iters, locmin, swaps, reset, same, restart, change,0n);
+		  ss().setStats(0n, winPlace as Int, 0n, time, iters, locmin, swaps, reset, same, restart, change,0n);
 		//val winstats = new CSPStats
 	}
 	public def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, 
 	        fr : Int) {
 	    stats.setStats(co, p, e, t, it, loc, sw, re, sa, rs, ch, fr);
+	    accStats(stats);
 	}
 	public def printStats(count:Int):void {
 	    stats.print(count);
