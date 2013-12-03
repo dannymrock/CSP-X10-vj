@@ -125,5 +125,52 @@ public class PartitAS extends ModelAS{
 		curMidX = curMidX - xi1 + xi2;
 		curMidX2 = curMidX2 - xi12 + xi22;
 	}
+	
+	/**
+	 *  CHECK_SOLUTION
+	 * 
+	 *  Checks if the solution is valid.
+	 */
+
+	public  def verified():Boolean {
+ 		var sumA:Int = 0n, sumB:Int = 0n;
+ 		var sumA2:Long = 0, sumB2:Long = 0;
+
+// 		int i = Random_Permut_Check(p_ad->sol, p_ad->size, p_ad->actual_value, p_ad->base_value);
+// 		if (i >= 0)
+// 		{
+// 			printf("ERROR: not a valid permutation, error at [%d] = %d\n", i, p_ad->sol[i]);
+// 			return 0;
+// 		}
+
+ 		var i:Int;
+ 		for(i = 0n; i < size2; i++)
+ 		{
+ 			sumA += variables(i);
+ 			sumA2 += variables(i) * variables(i);
+ 		}
+ 
+ 		for(; i < length; i++)
+		{
+ 			sumB += variables(i);
+ 			sumB2 += variables(i) * variables(i);
+ 		}
+ 
+ 		if (sumA != sumB)
+ 		{
+ 			Console.OUT.println("ERROR sum a: "+sumA+" != sum b: "+ sumB);
+ 			return false;
+ 		}
+
+ 		if (sumA2 != sumB2)
+ 		{
+ 			Console.OUT.println("ERROR sum a^2: "+sumA2+" != sum b: "+sumB2);
+ 			return false;
+ 		}
+
+ 		return true;
+ 	}
+	
+	
 }
 public type PartitAS(s:Long)=PartitAS{self.sz==s};

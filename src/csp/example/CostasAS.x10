@@ -371,5 +371,40 @@ public class CostasAS extends ModelAS{
 		
 		return -1n; /* -1 because the err[] is not up-to-date */
 	} 
+
+	public  def verified():Boolean {
+ 		var i:Int, j:Int, d:Int;
+ 		var r:Int = 1n;
+
+// 		i = Random_Permut_Check(p_ad->sol, p_ad->size, p_ad->actual_value, p_ad->base_value);
+ 
+// 		if (i >= 0)
+// 		{
+// 			printf("ERROR: not a valid permutation, error at [%d] = %d\n", i, p_ad->sol[i]);
+// 			return 0;
+// 		}
+ 
+ 		for(i = 1n; i < length; i++)
+ 		{
+ 			nbOcc.clear();
+ 			for(j = i; j < length; j++)
+ 			{
+ 				d = variables(j - i) - variables(j);
+ 				nbOcc(d + length) = nbOcc(d + length) + 1n;
+ 			}
+ 			
+ 			for(d = 1n; d < 2n * length; d++)
+ 			{
+ 				var nr:Int = nbOcc(d);
+ 				if (nr > 1)
+ 				{
+ 					var dist:Int = d - length;
+ 					Console.OUT.println("ERROR at row "+i+": distance "+dist+" appears "+nr+" times");
+ 					r = 0n;
+ 				}
+ 			}
+ 		} 
+ 		return r==1n;
+	}
 }
 public type CostasAS(s:Long)=CostasAS{self.sz==s};

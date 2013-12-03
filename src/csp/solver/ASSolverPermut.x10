@@ -263,7 +263,12 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 		nbSwapTot += nbSwap;
 		nbSameVarTot += nbSameVar;
 		nbLocalMinTot += nbLocalMin; 
-
+		
+		//creating an error
+		//csp_.swapVariables(1n,150n);
+		//csp_.swapVariables(1n,2n);
+		//csp_.variables(1)=2n;
+		
 		return total_cost;
 	}
 	

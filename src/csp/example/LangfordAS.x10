@@ -140,5 +140,38 @@ public class LangfordAS(order:Long) extends ModelAS{
 		Console.OUT.printf("\n");
 	}
 	
+	
+	/**
+	 *  CHECK_SOLUTION
+	 * 
+	 *  Checks if the solution is valid.
+	 */
+	public  def verified():Boolean {
+		var order:Int = length / 2n;
+		var i:Int, x:Int, y:Int, between:Int;
+		
+		// 		int i = Random_Permut_Check(p_ad->sol, p_ad->size, p_ad->actual_value, p_ad->base_value);
+		
+		// 		if (i >= 0)
+		// 		{
+		// 			printf("ERROR: not a valid permutation, error at [%d] = %d\n", i, p_ad->sol[i]);
+		// 			return 0;
+		// 		}
+		
+		for(i = 0n; i < order; i++)
+		{
+			x = variables(i);
+			y = variables(order + i);
+			between = Math.abs(x - y) - 1n;
+			
+			if (between != i + 1n)
+			{
+				Console.OUT.println("ERROR: between the two "+i+1n+" there are "+between+" values !");
+				return false;
+			}
+		}
+		
+		return true;
+	}	
 }
 public type LangfordAS(s:Long)=LangfordAS{self.sz==s};

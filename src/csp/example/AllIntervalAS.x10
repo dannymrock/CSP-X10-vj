@@ -327,5 +327,35 @@ public class AllIntervalAS extends ModelAS {
 // 		}else
 // 			return(length - distL);
 	}
+	
+	/**
+	 *  CHECK_SOLUTION
+	 * 
+	 *  Checks if the solution is valid.
+	 */
+	public  def verified():Boolean {
+ 		var r:Int = 1n;
+// 		int i = Random_Permut_Check(p_ad->sol, p_ad->size, p_ad->actual_value, p_ad->base_value);
+
+// 		if (i >= 0)
+// 		{
+// 			printf("ERROR: not a valid permutation, error at [%d] = %d\n", i, p_ad->sol[i]);
+// 			return 0;
+// 		}
+ 		
+ 		nbOcc.clear();
+ 		var i:Int;
+ 		for(i = 0n; i < length - 1n; i++)
+ 			nbOcc(Math.abs(variables(i) - variables(i + 1)))++;
+ 
+ 		for(i = 1n; i < length; i++)
+ 			if (nbOcc(i) > 1)
+ 			{
+ 				Console.OUT.println("ERROR distance "+i+" appears "+nbOcc(i)+" times");
+ 				r = 0n;
+ 			} 
+ 		return r==1n;
+ 	}
+	
 }
 public type AllIntervalAS(s:Long)=AllIntervalAS{self.sz==s};

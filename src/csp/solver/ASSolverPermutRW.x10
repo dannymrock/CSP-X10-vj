@@ -126,7 +126,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		    if (winner) {
 		        setStats(solvers);
 		        //at (Place.FIRST_PLACE) solvers().printStats(1n);
-		        //Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
+		        Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
 		    }
 		}
 		extTime += System.nanoTime();
