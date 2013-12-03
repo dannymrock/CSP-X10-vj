@@ -54,7 +54,8 @@ public class CSPStats{
 	 */
 	public def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, 
 			fr : Int){
-	    monitor.atomicBlock(()=> {
+	    //monitor.atomicBlock(()=> {
+	    	//Console.OUT.println(here+" set stats for: "+p);
 	        this.cost = co;
 	        this.team = p;
 	        this.explorer = e;
@@ -67,15 +68,18 @@ public class CSPStats{
 	        this.restart = rs;
 	        this.change = ch;
 	        this.forceRestart = fr;
-	        Unit()
-	    });
+	      //  Unit()
+	    //});
 	}
+	
+	
+	
 	/**
 	 *  Accumulate statistics in this object, Is used for average calculation
 	 * 	@param stats Object with solver data to accumulate 
 	 */
 	public def accStats(stats:CSPStats){
-	    monitor.atomicBlock(() => {
+	    //monitor.atomicBlock(() => {
 	        this.time += stats.time;
 	        this.iters += stats.iters;
 	        this.locmin += stats.locmin;
@@ -85,8 +89,8 @@ public class CSPStats{
 	        this.restart += stats.restart;
 	        this.change += stats.change;
 	        this.forceRestart += stats.forceRestart; 
-	        Unit()
-	    });
+	       // Unit()
+	   // });
 	}
 	
 	/**

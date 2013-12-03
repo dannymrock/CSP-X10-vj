@@ -64,6 +64,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	public def this(vectorSize:Long, upI : Int, commOpt : Int , thread : Int , ps : Int, npT : Int ){
 	    property(vectorSize,ps);
 	    accStats = new CSPStats();
+	    stats = new CSPStats();
 		updateI = upI; 
 		commOption = commOpt;
 		thEnable = thread;
@@ -83,43 +84,49 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	 */
 	public def solve(st:PlaceLocalHandle[ParallelSolverI(sz)], cspGen:()=>ModelAS(sz) ):void { 
 	    Logger.debug("Starting solve iteration.");
-	    val solvers=st;
-	    stats = new CSPStats();
+	    val solvers= st;
+	    
 	   
 	    assert solvers() == this : "Whoa, basic plumbing problem -- I am not part of solvers!";
 		val size = sz as Int;
 		var extTime : Long = -System.nanoTime();
+		
 		val random = new Random();
 		
-		val seed = random.nextLong();
-		
+		//val seed = random.nextLong();
+		//Console.OUT.println("seed:"+seed);
 		var nsize:Int = size;
 
 		csp_ = cspGen(); // use the supplied generator to generate the problem
 		
 		conf = new ASSolverConf(sz, 1n /*ASSolverConf.USE_PLACES*/, solvers, updateI,0n, commOption, poolSize, nTeams );
 		val ss = st() as ParallelSolverI(sz);
-		solver = new ASSolverPermut(sz, nsize, seed, ss);
+		//solver = new ASSolverPermut(sz, nsize, seed, ss);
+		
+		//Do I need to get fancy way to obtain different seeds here? 
+		//I'm currently using the solver id (place id) as seed
+		solver = new ASSolverPermut(sz, nsize, here.id, ss);
 
 		var cost:Int = x10.lang.Int.MAX_VALUE;
 		
 		/***/
-		
+		//taking the time only to solve the problem, not to signal the others explorers
 		time = -System.nanoTime();
 		cost = solver.solve(csp_);
 		time += System.nanoTime();
-		
+		//Console.OUT.println(here+" finish at time:"+time+" with cost:"+cost);		
 		if (cost == 0n){ 
 		    // A solution has been found! Huzzah! 
 		    // Light the candles! Kill the blighters!
-		    val home=here.id;
+		    val home = here.id;
 		    val winner = at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
 		    winPlace = here;
 		    bcost = cost;
 		 
 		    if (winner) {
 		        setStats(solvers);
-		        Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
+		        //at (Place.FIRST_PLACE) solvers().printStats(1n);
+		        //Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
 		    }
 		}
 		extTime += System.nanoTime();
@@ -130,7 +137,6 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		// accumulate results in place 0, need a better way at scale.
 		//at (Place.FIRST_PLACE)  st().accStats(stats_);
 		
-		//Logger.debug(()=> "updating accStats done.");
 	}
 	
 	
@@ -172,17 +178,16 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		val same = solver.nbSameVarTot;
 		val restart = solver.nbRestart;
 		val change = solver.nbChangeV;
-		
-		
-		at (Place.FIRST_PLACE) 
-		  ss().setStats(0n, winPlace as Int, 0n, time, iters, locmin, swaps, reset, same, restart, change,0n);
-		//val winstats = new CSPStats
+	
+		at (Place.FIRST_PLACE)
+		  	ss().setStats(0n, winPlace as Int, 0n, time, iters, locmin, swaps, reset, same, restart, change,0n);
 	}
 	public def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, 
 	        fr : Int) {
 	    stats.setStats(co, p, e, t, it, loc, sw, re, sa, rs, ch, fr);
 	    accStats(stats);
 	}
+	
 	public def printStats(count:Int):void {
 	    stats.print(count);
 	}
