@@ -2,63 +2,85 @@ package csp.solver;
 import csp.util.Maybe;
 
 /**
- * A solver runs a local solver in every place, within the frame of a 
+ * A solver runs a local solver in every place, within the frame of a
  * ParallelSolverI instance. All communication by a solver with other solvers
  * in the team is mediated through the frame.
- * 
+ *
  * <p> Therefore to design a new parallel solver, simply have it implement
- * ParallelSolverI. 
- * 
+ * ParallelSolverI.
+ *
  */
 public interface ParallelSolverI {
     property sz():Long;
-    
-    
-    def clear():void;
-    
-    def worstCost():Int;
-    
-    def solve(st:PlaceLocalHandle[ParallelSolverI(sz)], cspGen:()=>ModelAS(sz) ):void;
-    
+
     /**
-     * Get some best solution from the communication partner. If its
-     * cost is less than myCot, update csp_ in place, and return true,
-     * else return false. 
+     * Clear whatever internal state is stored about the current problem.
      */
-    def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean; 
-    
-    def communicate(totalCost:Int, variables:Rail[Int]{self.size==sz}):Int;
-    
-    def tryInsertVector(cost:Int, variables:Rail[Int]{self.size==sz}, place:Int):void;
-  
-    def intraTI():Int;
-    
+    def clear():void;
+
     /**
-     * Send a signal to the associated solver to kill it. The solver will 
+     * Current worst cost for the problem.
+     */
+    def worstCost():Int;
+
+    /**
+     * Solves the problem, which is specified by cspGen. We expect (but this is not checked in the code) that
+     * all instances of the ParallelSolverI frame (one in each place) is solving the same problem.
+     */
+    def solve(st:PlaceLocalHandle[ParallelSolverI(sz)], cspGen:()=>ModelAS(sz) ):void;
+
+    /**
+     * Get some best solution from the communication partner or my local pool. If its
+     * cost is less than myCost, update csp_ in place, and return true,
+     * else return false.
+     */
+    def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean;
+
+    /**
+     * Send this configuration (cost, current assignment of values to variables) to
+     * communication partner(s).
+     */
+    def communicate(totalCost:Int, variables:Valuation(sz)):Int;
+
+    /**
+     * Insert this configuration (sent from place) into the pool P at the current place,
+     * if the cost is lower than the best cost in P.
+     */
+    def tryInsertVector(cost:Int, variables:Valuation(sz), place:Int):void;
+
+    /** Return the value of the parameter used to control communication within the team
+     * (intraTeamInterval).
+     *
+     */
+
+    def intraTI():Int;
+
+    /**
+     * Send a signal to the associated solver to kill it. The solver will
      * kill itself the next time it checks for the kill signal.
-     * 
+     *
      */
     def kill():void;
-    
+
     /**
      * When a place p has a solution, it invokes this method. The first place
      * to execute this method during the program run will be declared the winner;
      * for it, the method will return true. Any subsequent invocation will
      * return false.
-     * 
+     *
      * <p> In the invocation that returns true, kill() is invoked at every place.
      */
     def announceWinner(ss:PlaceLocalHandle[ParallelSolverI(sz)], p:Long):Boolean;
-    
-    def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, 
+
+    def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int,
             fr : Int):void;
-    
+
     def getRemoteData():Maybe[CSPSharedUnit(sz)];
-    
+
     def accStats(CSPStats):void;
     def printStats(count:Int):void;
     def printAVG(count:Int):void;
-    
-    
+
+
 }
 public type ParallelSolverI(s:Long)=ParallelSolverI{self.sz==s};

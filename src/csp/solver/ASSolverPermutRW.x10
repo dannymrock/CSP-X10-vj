@@ -49,7 +49,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	var stats:CSPStats = null;
 	var accStats:CSPStats = null;
 	/** Comunication Variables*/
-	val comm = new CommData( sz, poolSize ); 
+	val ep = new ElitePool( sz, poolSize ); 
 	val thEnable : Int; 
 	
 	var conf: ASSolverConf(sz); // var because it needs to be set in solve.
@@ -103,14 +103,14 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		val ss = st() as ParallelSolverI(sz);
 		//solver = new ASSolverPermut(sz, nsize, seed, ss);
 		
-		//Do I need to get fancy way to obtain different seeds here? 
+		//Do I need to get more elegant way to obtain different seeds here? 
 		//I'm currently using the solver id (place id) as seed
 		solver = new ASSolverPermut(sz, nsize, here.id, ss);
 
 		var cost:Int = x10.lang.Int.MAX_VALUE;
 		
 		/***/
-		//taking the time only to solve the problem, not to signal the others explorers
+		//taking the time only to solve the problem, not included the time to signal the others explorers
 		time = -System.nanoTime();
 		cost = solver.solve(csp_);
 		time += System.nanoTime();
@@ -119,14 +119,28 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		    // A solution has been found! Huzzah! 
 		    // Light the candles! Kill the blighters!
 		    val home = here.id;
-		    val winner = at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
+		    val winner= at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
+		    // var winner:Boolean=false;
+		    // try{
+		    // 	 winner = at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
+		    // } catch(e:CheckedThrowable){
+		    // 	Console.OUT.println("Exception winnew at " + here);
+		    // 	e.printStackTrace();
+		    // }
+		    
+		    
 		    winPlace = here;
 		    bcost = cost;
 		 
 		    if (winner) {
-		        setStats(solvers);
-		        //at (Place.FIRST_PLACE) solvers().printStats(1n);
-		        Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
+		    	try{
+			    	setStats(solvers);
+			    	//at (Place.FIRST_PLACE) solvers().printStats(1n);
+			        Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
+		    	}catch(e:CheckedThrowable){
+		    		Console.OUT.println("Exception winnew at " + here);
+		    		e.printStackTrace();
+		    	}
 		    }
 		}
 		extTime += System.nanoTime();
@@ -195,13 +209,13 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	    accStats.printAVG(count);
 	}
 	public def tryInsertVector(cost:Int, variables:Rail[Int]{self.size==sz}, place:Int) {
-	    comm.tryInsertVector(cost, variables, place);
+	    ep.tryInsertVector(cost, variables, place);
 	}
-	public def getRemoteData():Maybe[CSPSharedUnit(sz)]=comm.getRemoteData();
-	public def worstCost()=comm.worstCost;
+	public def getRemoteData():Maybe[CSPSharedUnit(sz)]=ep.getRemoteData();
+	public def worstCost()=ep.worstCost;
 	public def clear(){
 	    winnerLatch.set(false);
-	    comm.clear();
+	    ep.clear();
 	    }
 	public def accStats(c:CSPStats):void {
 	    accStats.accStats(c);

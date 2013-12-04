@@ -58,7 +58,7 @@ public class Main {
 		val solverMode  = opts("-m", 0n);
 		val threads     = opts("-t", 0n);
 		val comm        = opts("-c", 0n);
-		val intraTI     = opts("-i", 1n);
+		val intraTI     = opts("-i", 100n);
 		val interTI     = opts("-j", 0n);
 		val nodesPTeam  = opts("-n", 1n);
 		val poolSize    = opts("-k", 4n);
@@ -149,13 +149,14 @@ public class Main {
 		//		stats = solverT.solve(size,param);
 			//}
 			//accStats.accStats(stats);
-			Console.OUT.printf("\r");
-			solvers().printStats(j);
-			solvers().printAVG(j);
-			Console.OUT.flush();
-			PlaceGroup.WORLD.broadcastFlat(()=>{
-			    solvers().clear();
-			});
+				
+				Console.OUT.printf("\r");
+				solvers().printStats(j);
+				solvers().printAVG(j);
+				Console.OUT.flush();
+				PlaceGroup.WORLD.broadcastFlat(()=>{
+					solvers().clear();
+				});
 		}
 		Console.OUT.printf("\r");
 		Console.OUT.println("|-----|----------|----------|-------|----------|----------|----------|-------|-----|-------|-----|");

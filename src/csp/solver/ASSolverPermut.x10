@@ -233,7 +233,7 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 	 	
 	 		
 	 		if (solver.intraTI() != 0n) 
-	 		    if( nbIter % solver.intraTI() == 0n ){
+	 		    if( nbIter % solver.intraTI() == 0n){        //here.id as Int ){
 	 		        //Console.OUT.println("In ");
 	 		        //Chang//
 	 		        val res = solver.communicate( total_cost, csp_.variables); 

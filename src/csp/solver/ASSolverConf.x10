@@ -19,7 +19,7 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	public static ALL_TO_ZERO = 1n;
 	public static ALL_TO_ALL = 2n;
 	public static ALL_TO_NEIGHBORS = 3n;
-	public static ALL_TO_GROUP = 4n;
+	public static TEAM = 4n;
 	
 	/** Solver use activities or places */
 	var solverMode : Int;
@@ -38,8 +38,8 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	
 	var delta : Int=0n;
 	
-	val noGroups : Int;
-	val myGroupId : Int;
+	val nbTeams : Int;
+	val myTeamId : Int;
 	val random = new x10.util.Random();
 	
 	/**
@@ -48,7 +48,7 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	val solvers:PlaceLocalHandle[ParallelSolverI(sz)];
 	
 	def this( sz:Long, solverModeIn : Int , ss: PlaceLocalHandle[ParallelSolverI(sz)], // commR : GlobalRef[CommData{self.sz==sz}], 
-	        intraTeamI : Int, interTeamI : Int , cOption : Int , ps : Int, nG : Int){
+	        intraTeamI : Int, interTeamI : Int , cOption : Int , ps : Int, nT : Int){
 		property(sz, ps);
 		solvers = ss;
 	    solverMode = solverModeIn;
@@ -57,8 +57,8 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 		commOption = cOption;
 		//pChange = 10;
 		//refCommDist = commD ;
-		noGroups = nG;
-		myGroupId = here.id as Int % noGroups;
+		nbTeams = nT;
+		myTeamId = here.id as Int % nbTeams;
 		
 		
 		//Console.OUT.println("I'm "+here.id+ " and my group is "+myGroupId);
@@ -88,7 +88,12 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	        // All-to-one place 0
 	        if (commOption == ALL_TO_ZERO){
 	            //Console.OUT.println("All-to-one");
-	            at(Place(0)) ss().tryInsertVector( totalCost , variables, placeid); 
+	        	try{
+	            	at(Place(0)) ss().tryInsertVector( totalCost , variables, placeid);
+	        	} catch(e:CheckedThrowable){
+	        		Console.OUT.println("Exception at " + here);
+	        		e.printStackTrace();
+	        	}
 	        }else if(commOption == ALL_TO_ALL){
 	            // All-to-All	
 	            //Console.OUT.println("All-to-all");
@@ -104,16 +109,15 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	                at(Place(placeup)) async ss().tryInsertVector( totalCost , variables, placeid);
 	            }
 	            if (placedown >= 0L){
-	                at(Place(placeup)) async ss().tryInsertVector( totalCost , variables, placeid);
+	            	at(Place(placeup)) async ss().tryInsertVector( totalCost , variables, placeid);
 	            }
-	        } /* vj: Not sure what is going on here yet.
-	         * else if(commOption == ALL_TO_GROUP){
-	         * val r = arrayRefs(myGroupId);
-	         * at(r) async r().tryInsertVector( totalCost , variables, placeid);
-	         * }*/
+	        } else if(commOption == TEAM){
+	        	//val r = arrayRefs(myGroupId);
+	        	at(Place(myTeamId)) async ss().tryInsertVector( totalCost , variables, placeid);
+	        }
 	        
 	        //Debug
-	        // if(here.id  == myGroupId){ //group heed
+	        // if(here.id  == myGryoupId){ //group heed
 	        //   	Console.OUT.println("I'm "+myGroupId+" head group, here my pool Vectors");
 	        //   	at(arrayRefs(myGroupId))arrayRefs(myGroupId)().printVectors();
 	        // }
@@ -136,11 +140,13 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	    val P=Place.MAX_PLACES;
 	    if (commOption == ALL_TO_ZERO)  return Place.FIRST_PLACE;
 	    if (commOption == ALL_TO_NEIGHBORS) {
-	        if (here.id+1 < P) return Place(here.id+1);
-	        if (here.id-1 >= 0) return Place(here.id-1);
+	    	return Place(here.id);
+	        //if (here.id+1 < P) return Place(here.id+1);
+	        //if (here.id-1 >= 0) return Place(here.id-1);
 	    }
-	    if (commOption == ALL_TO_ALL) return Place(random.nextLong()%P);
-	    // vj: Dont know what groups are about yet.
+	    if (commOption == ALL_TO_ALL) return Place(here.id);
+	    if (commOption == TEAM) return Place(myTeamId);
+	   
 	    return Place.FIRST_PLACE;
 	}
 	/**
@@ -155,6 +161,7 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	    val place:Place=communicationTarget();
 		val ss=solvers;
 		val a = at(place) ss().getRemoteData();
+		//if (place.id==0)Console.OUT.println(here+" comm to "+place+" and get "+a().cost);
 		if ( a!=null && (myCost + delta) > a().cost ){					 
 		    csp_.setVariables(a().vector);
 		    return true; 

@@ -3,18 +3,18 @@ package csp.solver;
 import csp.util.*;
 
 /**
- * Mainatain a poolSize set of best partial solutions. These
+ * Maintain a poolSize set of best partial solutions. These
  * can be queried by other places.
  * 
  */
 
-public class CommData(sz:Long, poolSize:Int) {
+public class ElitePool(sz:Long, poolSize:Int) {
 	var nbEntries : Int = 0n;
 	val bestPartialSolutions = new Rail(poolSize, CSPSharedUnit(sz,0n as Int,null,0n as Int)); // dummy value
 	var bestCost : Int = Int.MAX_VALUE;
 	var worstCost : Int = Int.MAX_VALUE;
 	val random = new RandomTools(123L);
-	val monitor = new Monitor("CommData");
+	val monitor = new Monitor("ElitePool");
 	
 	public def isGoodCost(cost : Int) : Boolean {
 		if (nbEntries == 0n) return true;
@@ -31,8 +31,15 @@ public class CommData(sz:Long, poolSize:Int) {
 	 * variables will already have happened.
 	 */
 	public def tryInsertVector(cost:Int, variables:Rail[Int]{self.size==sz}, place:Int) {
-	    monitor.atomicBlock(()=>tryInsertVector0(cost,variables,place));
+		try{
+			monitor.atomicBlock(()=>tryInsertVector0(cost,variables,place));
+		} catch(e:CheckedThrowable){
+			Console.OUT.println("Exception tryInsertVector at " + here);
+			e.printStackTrace();
+		}
+		
 	}
+
 	protected def tryInsertVector0( cost : Int , variables : Rail[Int]{self.size==sz}, place : Int ):Unit {
 		
 		if (cost >= worstCost) return Unit();
@@ -107,12 +114,14 @@ public class CommData(sz:Long, poolSize:Int) {
 	 * Get some vector from the best solutions.
 	 */
 	public def getRemoteData():Maybe[CSPSharedUnit(sz)]=
-	  monitor.atomicBlock(()=> {
-	      if (nbEntries < 1n) return null;
-	      val index = random.randomInt(nbEntries);
-	      if (index >= nbEntries) Console.OUT.println("Golden: index is " + index + " needed to be < " + nbEntries);
-	    return new Maybe(bestPartialSolutions(index));
-	  });
+		monitor.atomicBlock(()=> {
+			//if (here.id==0)Console.OUT.println(here+"aqui");
+			if (nbEntries < 1n) return null;
+			val index = random.randomInt(nbEntries);
+			if (index >= nbEntries) Console.OUT.println("Golden: index is " + index + " needed to be < " + nbEntries);
+			//if (here.id==0)Console.OUT.println(here+"alli");
+			return new Maybe(bestPartialSolutions(index));
+		});
 	  
 		
 	public def clear(){
