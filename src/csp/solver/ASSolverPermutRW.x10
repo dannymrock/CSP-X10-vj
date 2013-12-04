@@ -120,27 +120,14 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		    // Light the candles! Kill the blighters!
 		    val home = here.id;
 		    val winner= at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
-		    // var winner:Boolean=false;
-		    // try{
-		    // 	 winner = at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
-		    // } catch(e:CheckedThrowable){
-		    // 	Console.OUT.println("Exception winnew at " + here);
-		    // 	e.printStackTrace();
-		    // }
-		    
 		    
 		    winPlace = here;
 		    bcost = cost;
 		 
 		    if (winner) {
-		    	try{
-			    	setStats(solvers);
-			    	//at (Place.FIRST_PLACE) solvers().printStats(1n);
-			        Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
-		    	}catch(e:CheckedThrowable){
-		    		Console.OUT.println("Exception winnew at " + here);
-		    		e.printStackTrace();
-		    	}
+		    	setStats(solvers);
+			    //at (Place.FIRST_PLACE) solvers().printStats(1n);
+			  	Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
 		    }
 		}
 		extTime += System.nanoTime();

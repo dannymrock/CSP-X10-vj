@@ -88,12 +88,7 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	        // All-to-one place 0
 	        if (commOption == ALL_TO_ZERO){
 	            //Console.OUT.println("All-to-one");
-	        	try{
-	            	at(Place(0)) ss().tryInsertVector( totalCost , variables, placeid);
-	        	} catch(e:CheckedThrowable){
-	        		Console.OUT.println("Exception at " + here);
-	        		e.printStackTrace();
-	        	}
+	        	at(Place(0)) ss().tryInsertVector( totalCost , variables, placeid);
 	        }else if(commOption == ALL_TO_ALL){
 	            // All-to-All	
 	            //Console.OUT.println("All-to-all");

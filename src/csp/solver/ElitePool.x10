@@ -31,13 +31,7 @@ public class ElitePool(sz:Long, poolSize:Int) {
 	 * variables will already have happened.
 	 */
 	public def tryInsertVector(cost:Int, variables:Rail[Int]{self.size==sz}, place:Int) {
-		try{
-			monitor.atomicBlock(()=>tryInsertVector0(cost,variables,place));
-		} catch(e:CheckedThrowable){
-			Console.OUT.println("Exception tryInsertVector at " + here);
-			e.printStackTrace();
-		}
-		
+		monitor.atomicBlock(()=>tryInsertVector0(cost,variables,place));		
 	}
 
 	protected def tryInsertVector0( cost : Int , variables : Rail[Int]{self.size==sz}, place : Int ):Unit {
