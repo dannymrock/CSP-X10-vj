@@ -1,6 +1,7 @@
 package csp.solver;
 import csp.util.*;
-import x10.util.concurrent.AtomicBoolean; 
+import x10.util.concurrent.AtomicBoolean;
+import x10.compiler.Inline;
 
 public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 	property sz()=sz;
@@ -80,7 +81,7 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 					setStats(solvers, exID, time);
 					//Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
 					Console.OUT.println("Solution is " + (csp_(exID).verified()? "ok" : "WRONG"));
-					csp_(exID).displaySolution();
+					//csp_(exID).displaySolution();
 				}
 			}	
 		}
@@ -142,11 +143,31 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 	public def accStats(st:CSPStats):void {
 		accStats.accStats(st);
 	}
+	
+	
+	// Communication functions
+	
+	public def communicate(var totalCost:Int, var variables:Rail[Int]{self.size==sz}) {
+		ep.tryInsertVector(totalCost, variables, here.id  as Int);
+	}
 			
 	public def getRemoteData():Maybe[CSPSharedUnit(sz)] {
 		// TODO: auto-generated method stub
 		return null;
 	}
+				
+	public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean {
+		val a = ep.getRemoteData();
+		//if ( a!=null && (myCost + delta) > a().cost ){
+		// put it in a container class
+		if ( a!=null && myCost > a().cost ){
+			csp_.setVariables(a().vector);
+			return true; 
+		}
+		return false;
+	}
+			
+	@Inline public def intraTI():Int = conf.intraTI;
 	
 	public def worstCost():Int {
 		// TODO: auto-generated method stub
@@ -156,45 +177,6 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 	public def tryInsertVector(var cost:Int, var variables:Rail[Int]{self.size==sz}, var place:x10.
 			lang.Int):void {
 		// TODO: auto-generated method stub
-	}
-	
-	public def communicate(var totalCost:Int, var variables:Rail[Int]{self.size==sz}):Int {
-		// TODO: auto-generated method stub
-		return 0N;
-	}
-	
-	// public def toString():String {
-	// 	// TODO: auto-generated method stub
-	// 	return null;
-	// }
-	// 		
-	// public def equals(var that:Any):Boolean {
-	// 	// TODO: auto-generated method stub
-	// 	return false;
-	// }
-	// 		
-	// 
-	// 		
-	// public def hashCode():Int {
-	// 	// TODO: auto-generated method stub
-	// 	return 0N;
-	// }
-			
-	public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean {
-		// TODO: auto-generated method stub
-		return false;
-	}
-			
-	// public def typeName():String {
-	// 	// TODO: auto-generated method stub
-	// 	return null;
-	// }
-	
-	
-	
-	public def intraTI():Int {
-		// TODO: auto-generated method stub
-		return 0N;
 	}
 						
 }

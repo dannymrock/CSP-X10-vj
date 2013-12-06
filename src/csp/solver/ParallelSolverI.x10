@@ -40,7 +40,7 @@ public interface ParallelSolverI {
      * Send this configuration (cost, current assignment of values to variables) to
      * communication partner(s).
      */
-    def communicate(totalCost:Int, variables:Valuation(sz)):Int;
+    def communicate(totalCost:Int, variables:Valuation(sz)):void;
 
     /**
      * Insert this configuration (sent from place) into the pool P at the current place,

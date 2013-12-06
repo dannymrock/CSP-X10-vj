@@ -237,7 +237,7 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 	 		    if( nbIter % solver.intraTI() == 0n){        //here.id as Int ){
 	 		        //Console.OUT.println("In ");
 	 		        //Chang//
-	 		        val res = solver.communicate( total_cost, csp_.variables); 
+	 		        solver.communicate( total_cost, csp_.variables); 
 	 		        if (random.randomInt(100n) < solverP.probChangeVector){
 	 		            val result = solver.getIPVector(csp_, total_cost );
 	 		            if (result){

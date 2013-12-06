@@ -139,8 +139,9 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	
 	@Inline public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean 
 	  = conf.getIPVector(csp_, myCost);
-	@Inline public def communicate(totalCost:Int, variables:Rail[Int]{self.size==sz} ):Int
-	  = conf.communicate(totalCost, variables);
+	public def communicate(totalCost:Int, variables:Rail[Int]{self.size==sz}){
+		conf.communicate(totalCost, variables);
+	}
 	
 	@Inline public def intraTI():Int = conf.intraTI;
 	@Inline public def restartPool():void { conf.restartPool();}

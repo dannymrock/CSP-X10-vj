@@ -42,12 +42,13 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	val myTeamId : Int;
 	val random = new x10.util.Random();
 	
+	
 	/**
 	 * The reference to all team members, for communication.
 	 */
 	val solvers:PlaceLocalHandle[ParallelSolverI(sz)];
 	
-	def this( sz:Long, solverModeIn : Int , ss: PlaceLocalHandle[ParallelSolverI(sz)], // commR : GlobalRef[CommData{self.sz==sz}], 
+	def this( sz:Long, solverModeIn : Int , ss: PlaceLocalHandle[ParallelSolverI(sz)], 
 	        intraTeamI : Int, interTeamI : Int , cOption : Int , ps : Int, nT : Int){
 		property(sz, ps);
 		solvers = ss;
@@ -57,6 +58,8 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 		commOption = cOption;
 		nbTeams = nT;
 		myTeamId = here.id as Int % nbTeams;
+		
+		
 		
 		
 		//Console.OUT.println("I'm "+here.id+ " and my group is "+myGroupId);
@@ -69,11 +72,11 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	}
 	/**
 	 * 	communicate the vector if Searching thread totalCost is better than worstCost in the pool
-	 *  @return 0 if good cost, -1 if bad cost
+	 * 
 	 */
-	public def communicate(totalCost : Int, variables : Rail[Int]{self.size==sz} ) : Int {
+	public def communicate(totalCost : Int, variables : Rail[Int]{self.size==sz} ) {
 	    if (commOption==NO_COMM) { 
-	        return 0n;
+	        return;
 	    }
 	    Logger.debug(()=>" communicate: entering.");
 	    if (solverMode == USE_PLACES) {
@@ -120,7 +123,7 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	    }else{
 	        Console.OUT.println("ERROR: Unknown solver mode");
 	    }
-	    return 0n;
+	    return;
 	}
 	
 	
