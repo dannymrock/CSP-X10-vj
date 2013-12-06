@@ -158,14 +158,14 @@ public class Main {
 			
 			Logger.debug(()=>" Start broadcatFlat: solvers().solve function ");
 			
-			try{
-				PlaceGroup.WORLD.broadcastFlat(()=>{
-					solvers().solve(solvers, cspGen);
-				});
-			} catch(e:CheckedThrowable){
-				Console.OUT.println("Exception at " + here);
-				e.printStackTrace();
-			}
+			
+			PlaceGroup.WORLD.broadcastFlat(()=>{
+				solvers().solve(solvers, cspGen);
+			});
+			
+			// finish for (p in Place.places()) at (p) async {
+			// 	solvers().solve(solvers, cspGen);
+			// }
 			
 			Logger.debug(()=>" End braodcastFlat: solvers().solve function");
 			

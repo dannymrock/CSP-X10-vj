@@ -115,31 +115,21 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		cost = solver.solve(csp_);
 		time += System.nanoTime();
 		
-		Logger.debug(()=>" Start solve process: solver.solve() function ");
-		//Console.OUT.println(here+" finish at time:"+time+" with cost:"+cost);		
 		if (cost == 0n){ 
 		    // A solution has been found! Huzzah! 
 		    // Light the candles! Kill the blighters!
 		    val home = here.id;
-		    //val winner= at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
-		    var winner:Boolean=false;
-		    try{
-		    	winner= at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
-		    }catch(e:CheckedThrowable){
-		    	Console.OUT.println("Exception at " + here);
-		    	e.printStackTrace();
-		    }
+		    
+		    val winner:Boolean;
+		    finish winner = at(Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
+		    
 		    winPlace = here;
 		    bcost = cost;
 		 
 		    if (winner) {
-		    	Logger.debug(()=>" I'm winner: setting stats...");
 		    	setStats(solvers);
-		    	Logger.debug(()=>" I'm winner: stats ready");
-		    	
-			    //at (Place.FIRST_PLACE) solvers().printStats(1n);
-			  	//Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
-		    	Console.OUT.print("Solution is " + (csp_.verified()? "ok" : "WRONG"));
+		    	//Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
+		    	Console.OUT.println("Solution is " + (csp_.verified()? "ok" : "WRONG"));
 		    	csp_.displaySolution();
 		    }
 		}
@@ -150,7 +140,6 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		
 		// accumulate results in place 0, need a better way at scale.
 		//at (Place.FIRST_PLACE)  st().accStats(stats_);	
-		Logger.debug(()=>" end solver ASSolverPermut");
 	}
 	
 	@Inline public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean 
@@ -192,13 +181,8 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		val restart = solver.nbRestart;
 		val change = solver.nbChangeV;
 	
-		try{
-		at (Place.FIRST_PLACE)
+		finish at (Place.FIRST_PLACE) async
 		  	ss().setStats(0n, winPlace as Int, 0n, time, iters, locmin, swaps, reset, same, restart, change,0n);
-		}catch(e:CheckedThrowable){
-			Console.OUT.println("Exception at " + here);
-			e.printStackTrace();
-		}
 	}
 	public def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, 
 	        fr : Int) {
@@ -219,7 +203,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	public def worstCost()=ep.worstCost;
 	public def clear(){
 	    winnerLatch.set(false);
-	    //ep.clear();
+	    ep.clear();
 	    }
 	public def accStats(c:CSPStats):void {
 	    accStats.accStats(c);

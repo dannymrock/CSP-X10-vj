@@ -55,8 +55,6 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 		intraTI = intraTeamI;
 		interTI = interTeamI;
 		commOption = cOption;
-		//pChange = 10;
-		//refCommDist = commD ;
 		nbTeams = nT;
 		myTeamId = here.id as Int % nbTeams;
 		
@@ -88,27 +86,27 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	        // All-to-one place 0
 	        if (commOption == ALL_TO_ZERO){
 	            //Console.OUT.println("All-to-one");
-	        	at(Place(0)) ss().tryInsertVector( totalCost , variables, placeid);
+	        	finish at(Place(0)) async ss().tryInsertVector( totalCost , variables, placeid);
 	        }else if(commOption == ALL_TO_ALL){
 	            // All-to-All	
 	            //Console.OUT.println("All-to-all");
 	            for (p in Place.places()) 
 	                if (here != p) 
-	                    at(p) async ss().tryInsertVector( totalCost , variables, placeid);
+	                    finish at(p) async ss().tryInsertVector( totalCost , variables, placeid);
 	        }else if (commOption == ALL_TO_NEIGHBORS){ 
 	            //Neighbors
 	            //Console.OUT.println("Neighbors");
 	            val placeup = here.id + 1;
 	            val placedown = here.id  - 1;
 	            if (placeup < Place.MAX_PLACES){
-	                at(Place(placeup)) async ss().tryInsertVector( totalCost , variables, placeid);
+	                finish at(Place(placeup)) async ss().tryInsertVector( totalCost , variables, placeid);
 	            }
 	            if (placedown >= 0L){
-	            	at(Place(placeup)) async ss().tryInsertVector( totalCost , variables, placeid);
+	            	finish at(Place(placeup)) async ss().tryInsertVector( totalCost , variables, placeid);
 	            }
 	        } else if(commOption == TEAM){
 	        	//val r = arrayRefs(myGroupId);
-	        	at(Place(myTeamId)) async ss().tryInsertVector( totalCost , variables, placeid);
+	        	finish at(Place(myTeamId)) async ss().tryInsertVector( totalCost , variables, placeid);
 	        }
 	        
 	        //Debug
@@ -155,7 +153,8 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 		Logger.debug(()=> " getIPVector: entering.");
 	    val place:Place=communicationTarget();
 		val ss=solvers;
-		val a = at(place) ss().getRemoteData();
+		val a : Maybe[CSPSharedUnit(sz)];
+		finish a = at(place) ss().getRemoteData();
 		//if (place.id==0)Console.OUT.println(here+" comm to "+place+" and get "+a().cost);
 		if ( a!=null && (myCost + delta) > a().cost ){					 
 		    csp_.setVariables(a().vector);
