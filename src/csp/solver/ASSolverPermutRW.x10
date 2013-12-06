@@ -83,10 +83,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	 * 	@return cost of the solution
 	 */
 	public def solve(st:PlaceLocalHandle[ParallelSolverI(sz)], cspGen:()=>ModelAS(sz) ):void { 
-	    Logger.debug("Starting solve iteration.");
 	    val solvers= st;
-	    
-	   
 	    assert solvers() == this : "Whoa, basic plumbing problem -- I am not part of solvers!";
 		val size = sz as Int;
 		var extTime : Long = -System.nanoTime();
@@ -111,23 +108,39 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		
 		/***/
 		//taking the time only to solve the problem, not included the time to signal the others explorers
+
+		Logger.debug(()=>" Start solve process: solver.solve() function ");
+		
 		time = -System.nanoTime();
 		cost = solver.solve(csp_);
 		time += System.nanoTime();
+		
+		Logger.debug(()=>" Start solve process: solver.solve() function ");
 		//Console.OUT.println(here+" finish at time:"+time+" with cost:"+cost);		
 		if (cost == 0n){ 
 		    // A solution has been found! Huzzah! 
 		    // Light the candles! Kill the blighters!
 		    val home = here.id;
-		    val winner= at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
-		    
+		    //val winner= at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
+		    var winner:Boolean=false;
+		    try{
+		    	winner= at (Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
+		    }catch(e:CheckedThrowable){
+		    	Console.OUT.println("Exception at " + here);
+		    	e.printStackTrace();
+		    }
 		    winPlace = here;
 		    bcost = cost;
 		 
 		    if (winner) {
+		    	Logger.debug(()=>" I'm winner: setting stats...");
 		    	setStats(solvers);
+		    	Logger.debug(()=>" I'm winner: stats ready");
+		    	
 			    //at (Place.FIRST_PLACE) solvers().printStats(1n);
-			  	Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
+			  	//Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
+		    	Console.OUT.print("Solution is " + (csp_.verified()? "ok" : "WRONG"));
+		    	csp_.displaySolution();
 		    }
 		}
 		extTime += System.nanoTime();
@@ -136,10 +149,9 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		//Logger.debug(()=> "updating accStats");
 		
 		// accumulate results in place 0, need a better way at scale.
-		//at (Place.FIRST_PLACE)  st().accStats(stats_);
-		
+		//at (Place.FIRST_PLACE)  st().accStats(stats_);	
+		Logger.debug(()=>" end solver ASSolverPermut");
 	}
-	
 	
 	@Inline public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean 
 	  = conf.getIPVector(csp_, myCost);
@@ -180,8 +192,13 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		val restart = solver.nbRestart;
 		val change = solver.nbChangeV;
 	
+		try{
 		at (Place.FIRST_PLACE)
 		  	ss().setStats(0n, winPlace as Int, 0n, time, iters, locmin, swaps, reset, same, restart, change,0n);
+		}catch(e:CheckedThrowable){
+			Console.OUT.println("Exception at " + here);
+			e.printStackTrace();
+		}
 	}
 	public def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, 
 	        fr : Int) {
@@ -202,10 +219,11 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	public def worstCost()=ep.worstCost;
 	public def clear(){
 	    winnerLatch.set(false);
-	    ep.clear();
+	    //ep.clear();
 	    }
 	public def accStats(c:CSPStats):void {
 	    accStats.accStats(c);
 	}
+	
 }
 public type ASSolverPermutRW(s:Long)=ASSolverPermutRW{self.sz==s};

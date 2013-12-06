@@ -150,6 +150,7 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 					//Console.OUT.println("Restart...");
 					continue;
 				}
+				//Console.OUT.println("Not solution found");
 				break; 
 			}
 			

@@ -25,6 +25,7 @@ public class Main {
             if (kind==COSTAS_PROBLEM) return new CostasAS(vectorSize, seed);
             if (kind==ALL_INTERVAL_PROBLEM) return new AllIntervalAS(vectorSize, seed, true);
             if (kind==LANGFORD_PROBLEM) return new LangfordAS(size, vectorSize, seed);
+            if (kind==STABLE_MARRIAGE_PROBLEM) return new StableMarriageAS(vectorSize, seed);
             return new PartitAS(vectorSize, seed);
         }
     }
@@ -35,6 +36,7 @@ public class Main {
 	public static val ALL_INTERVAL_PROBLEM = 3n;
 	public static val LANGFORD_PROBLEM = 4n;
 	public static val PARTIT_PROBLEM = 5n;
+	public static val STABLE_MARRIAGE_PROBLEM = 6n;
 	
 	public static def main(args:Rail[String]):void{
 	
@@ -95,11 +97,23 @@ public class Main {
 			//Console.OUT.println("Number Partition Problem");
 			param = PARTIT_PROBLEM;
 			vectorSize=size;
+		} else if(cspProblem.equals("stable-marriage")){
+			//Console.OUT.println("Number Partition Problem");
+			param = STABLE_MARRIAGE_PROBLEM;
+			vectorSize=size;
 		} else{
 			Console.OUT.println("Error: Type a valid CSP example: magic-square"); 
 			return;
 		}
 		
+		// if(param==STABLE_MARRIAGE_PROBLEM){
+		// 	var x:StableMarriageAS(size as Long) = new StableMarriageAS(size,1);
+		// 	x.initialize(0n);
+		// 	x.printMatching();
+		// 	Console.OUT.println("Cost: "+x.costOfSolution(0n));
+  //           Console.OUT.println("Cost if swap 0 - 1: "+x.costIfSwap(0n,0n,1n));
+		// 	return;
+		// }
 		/*
 		 *  Creating objects for solver execution
 		 */
@@ -141,22 +155,38 @@ public class Main {
 			val cspGen=():ModelAS(vectorSz)=> CSPProblem(problem).make(size as Long, vectorSz, seed);
 			
 			//if (solverMode == 0n){ 
-		
+			
+			Logger.debug(()=>" Start broadcatFlat: solvers().solve function ");
+			
+			try{
 				PlaceGroup.WORLD.broadcastFlat(()=>{
-				    solvers().solve(solvers, cspGen);
-				    });
+					solvers().solve(solvers, cspGen);
+				});
+			} catch(e:CheckedThrowable){
+				Console.OUT.println("Exception at " + here);
+				e.printStackTrace();
+			}
+			
+			Logger.debug(()=>" End braodcastFlat: solvers().solve function");
+			
 			//}else{
-		//		stats = solverT.solve(size,param);
+			//		stats = solverT.solve(size,param);
 			//}
 			//accStats.accStats(stats);
-				
-				Console.OUT.printf("\r");
-				solvers().printStats(j);
-				solvers().printAVG(j);
-				Console.OUT.flush();
-				PlaceGroup.WORLD.broadcastFlat(()=>{
-					solvers().clear();
-				});
+			
+			Console.OUT.printf("\r");
+			solvers().printStats(j);
+			solvers().printAVG(j);
+			Console.OUT.flush();
+			
+
+			Logger.debug(()=>" Start broadcatFlat: solvers().clear function ");
+			
+			PlaceGroup.WORLD.broadcastFlat(()=>{
+				solvers().clear();
+			});
+
+			Logger.debug(()=>" Start broadcatFlat: solvers().clear function ");
 		}
 		Console.OUT.printf("\r");
 		Console.OUT.println("|-----|----------|----------|-------|----------|----------|----------|-------|-----|-------|-----|");

@@ -80,6 +80,7 @@ public interface ParallelSolverI {
     def accStats(CSPStats):void;
     def printStats(count:Int):void;
     def printAVG(count:Int):void;
+    
 
 
 }

@@ -21,9 +21,9 @@ public class RandomTools {
 		seed=s;
 	}
 	
-	public def randomPermut( size : Int , baseValue : Int ) : Rail[Int]
+	public def randomPermut( sz : Long , baseValue : Int ) : Rail[Int]
 	{
-		
+		val size=sz as Int;
 		val vec  = new Rail[Int] (size, (k:Long) => baseValue + k as Int);
 				
 		for(var i:Int = size - 1n; i > 0n ; i--)
