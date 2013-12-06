@@ -69,7 +69,7 @@ public class Main {
 		//at(Main.param) Main.param().poolSize = poolSize;
 
 		Console.OUT.println("CSP Problem: "+cspProblem+" Size: "+size+"\nNumber of repetitions: "+testNo+
-							"\nSolverMode: "+solverMode+"\nCommunication strategy: "+comm+
+							"\nSolverMode: "+(solverMode==0n ?"Independent":"Cooperative" )+"\nCommunication strategy: "+comm+
 				            "\nIntra-Team Comm. inteval: "+intraTI+"\nInter-Team Comm. inteval: "+interTI+
 				            "\nMinimum permissible distance: "+minDistance+
 							"\nPool Size: "+poolSize);
@@ -111,32 +111,34 @@ public class Main {
 		// 	x.initialize(0n);
 		// 	x.printMatching();
 		// 	Console.OUT.println("Cost: "+x.costOfSolution(0n));
-  //           Console.OUT.println("Cost if swap 0 - 1: "+x.costIfSwap(0n,0n,1n));
+		//      Console.OUT.println("Cost if swap 0 - 1: "+x.costIfSwap(0n,0n,1n));
 		// 	return;
 		// }
+		
 		/*
 		 *  Creating objects for solver execution
 		 */
-		var timeStart : Long;
-		var cost : Int;
-		var timeEnd : Long;
-		var sumTimes: Long = 0L;
 		val accStats = new CSPStats();
-		
-		// communication interval = 10
-		val vectorSz=vectorSize;
-		val solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
-		        ()=>new ASSolverPermutRW(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz)); 
-	//	val solverT = new CooperativeMW(intraTI, interTI, threads, poolSize, nodesPTeam, minDistance);
-
+		val vectorSz = vectorSize;
+		// val solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
+		//         ()=>new ASSolverPermutRW(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz)); 
+		//val solverT = new CooperativeMW(intraTI, interTI, threads, poolSize, nodesPTeam, minDistance);
+		val solvers:PlaceLocalHandle[ParallelSolverI(vectorSz)];
 		if (solverMode == 0n){
 			Console.OUT.println("Using multi-walks with "+Place.MAX_PLACES+" Places");
 			Console.OUT.println("There are "+Place.MAX_PLACES+" teams each one with "+nodesPTeam+" explorer places. "+
 					Place.MAX_PLACES*nodesPTeam+" explorers in total (places)");
+			
+			solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
+					()=>new ASSolverPermutRW(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz));
+			
 		} else{
 			Console.OUT.println("Using multi-walks with "+Place.MAX_PLACES+" places and "+nodesPTeam+" activities");
 			Console.OUT.println("There are "+Place.MAX_PLACES+" teams each one with "+nodesPTeam+
 					" explorer activities. "+Place.MAX_PLACES*nodesPTeam+" explorers in total (places and activities)");
+			
+			solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
+					()=>new CooperativeMW(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz));
 		}
 		
 		Console.OUT.println("|Count| Time (s) |  Iters   | Place |  LocMin  |  Swaps   |  Resets  | Sa/It |ReSta| Change|  FR |");
@@ -154,8 +156,6 @@ public class Main {
 			val seed = random.nextLong();
 			val cspGen=():ModelAS(vectorSz)=> CSPProblem(problem).make(size as Long, vectorSz, seed);
 			
-			//if (solverMode == 0n){ 
-			
 			Logger.debug(()=>" Start broadcatFlat: solvers().solve function ");
 			
 			
@@ -163,23 +163,13 @@ public class Main {
 				solvers().solve(solvers, cspGen);
 			});
 			
-			// finish for (p in Place.places()) at (p) async {
-			// 	solvers().solve(solvers, cspGen);
-			// }
-			
 			Logger.debug(()=>" End braodcastFlat: solvers().solve function");
-			
-			//}else{
-			//		stats = solverT.solve(size,param);
-			//}
-			//accStats.accStats(stats);
 			
 			Console.OUT.printf("\r");
 			solvers().printStats(j);
 			solvers().printAVG(j);
 			Console.OUT.flush();
 			
-
 			Logger.debug(()=>" Start broadcatFlat: solvers().clear function ");
 			
 			PlaceGroup.WORLD.broadcastFlat(()=>{

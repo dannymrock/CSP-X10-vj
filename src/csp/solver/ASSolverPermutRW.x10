@@ -1,8 +1,6 @@
 package csp.solver;
 
 import csp.util.*;
-import csp.solver.ASSolverPermut;
-
 /** ASSolverPermutRW is the parallel implementation of Random Walk Adaptive Search solver
  * 	in the X10 language. This implementation use distributed isolated instances
  * 	of the solver, each one with a diferent seeds in order to have differents 
@@ -40,7 +38,6 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	var csp_:ModelAS(sz);
 	var solver:ASSolverPermut(sz);
 	var time:Long;
-	var winPlace : Place;
 	
 	val updateI : Int;
 	val commOption : Int;
@@ -50,7 +47,6 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	var accStats:CSPStats = null;
 	/** Comunication Variables*/
 	val ep = new ElitePool( sz, poolSize ); 
-	val thEnable : Int; 
 	
 	var conf: ASSolverConf(sz); // var because it needs to be set in solve.
 	
@@ -67,8 +63,6 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	    stats = new CSPStats();
 		updateI = upI; 
 		commOption = commOpt;
-		thEnable = thread;
-		
 		nbExplorerPT = npT; // will be a parameter 
 		nTeams = Place.MAX_PLACES as Int / nbExplorerPT ;
 	}
@@ -113,7 +107,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		
 		time = -System.nanoTime();
 		cost = solver.solve(csp_);
-		time += System.nanoTime();
+		
 		
 		if (cost == 0n){ 
 		    // A solution has been found! Huzzah! 
@@ -123,14 +117,15 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		    val winner:Boolean;
 		    finish winner = at(Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
 		    
-		    winPlace = here;
+		    //winPlace = here;
 		    bcost = cost;
 		 
 		    if (winner) {
+		    	time += System.nanoTime();
 		    	setStats(solvers);
 		    	//Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
 		    	Console.OUT.println("Solution is " + (csp_.verified()? "ok" : "WRONG"));
-		    	csp_.displaySolution();
+		    	//csp_.displaySolution();
 		    }
 		}
 		extTime += System.nanoTime();
@@ -202,9 +197,9 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	public def getRemoteData():Maybe[CSPSharedUnit(sz)]=ep.getRemoteData();
 	public def worstCost()=ep.worstCost;
 	public def clear(){
-	    winnerLatch.set(false);
-	    ep.clear();
-	    }
+		winnerLatch.set(false);
+		ep.clear();
+	}
 	public def accStats(c:CSPStats):void {
 	    accStats.accStats(c);
 	}
