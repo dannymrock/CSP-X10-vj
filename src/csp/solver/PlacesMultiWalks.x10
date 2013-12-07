@@ -32,7 +32,7 @@ import x10.util.concurrent.AtomicBoolean;
  *  >
  * </verbatim>
  */
-public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {  
+public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {  
     property sz()=sz;
     // Shared state, accessible from any place, via at(
 	var csp_:ModelAS(sz);
@@ -46,10 +46,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	var stats:CSPStats = null;
 	var accStats:CSPStats = null;
 	/** Comunication Variables*/
-	val ep = new ElitePool( sz, poolSize ); 
-	
-	var conf: ASSolverConf(sz); // var because it needs to be set in solve.
-	
+	var commM : CommManager(sz);
 	//Hybrid approach
 	val nbExplorerPT : Int;
 	val nTeams : Int;
@@ -90,7 +87,8 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 
 		csp_ = cspGen(); // use the supplied generator to generate the problem
 		
-		conf = new ASSolverConf(sz, 1n /*ASSolverConf.USE_PLACES*/, solvers, updateI,0n, commOption, poolSize, nTeams );
+		//conf = new ASSolverConf(sz, 1n /*ASSolverConf.USE_PLACES*/, solvers, updateI,0n, commOption, poolSize, nTeams );
+	 	commM = new CommManager(sz, 0n , solvers, updateI,0n, commOption, poolSize, nTeams );
 		val ss = st() as ParallelSolverI(sz);
 		//solver = new ASSolverPermut(sz, nsize, seed, ss);
 		
@@ -103,7 +101,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 		/***/
 		//taking the time only to solve the problem, not included the time to signal the others explorers
 
-		Logger.debug(()=>" Start solve process: solver.solve() function ");
+		Logger.debug(()=>"  PlacesMultiWalks: Start solve process: solver.solve() function ");
 		
 		time = -System.nanoTime();
 		cost = solver.solve(csp_);
@@ -138,15 +136,14 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	}
 	
 	@Inline public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean 
-	  = conf.getIPVector(csp_, myCost);
+	  = commM.getIPVector(csp_, myCost);
 	public def communicate(totalCost:Int, variables:Rail[Int]{self.size==sz}){
-		conf.communicate(totalCost, variables);
+		commM.communicate(totalCost, variables);
 	}
 	
-	@Inline public def intraTI():Int = conf.intraTI;
-	@Inline public def restartPool():void { conf.restartPool();}
+	@Inline public def intraTI():Int = commM.intraTI;
 	
-	val monitor = new Monitor("ASSolverPermutRW"); 
+	//val monitor = new Monitor("PlacesMultiWalks"); 
 	public def kill() {
 	        solver.kill=true;
 	}
@@ -154,7 +151,7 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	public def announceWinner(ss:PlaceLocalHandle[ParallelSolverI(sz)], p:Long):Boolean {
 	    val result = winnerLatch.compareAndSet(false, true);
 	   
-	  // Logger.info(()=> "announceWinner result=" + result + " for " + p + " this=" + this );
+	  	Logger.debug(()=> "  PlacesMultiWalks: announceWinner result=" + result + " for " + p + " this=" + this );
 	    if (result) {
 	         for (k in Place.places()) 
 	            if (p != k.id) 
@@ -193,17 +190,17 @@ public class ASSolverPermutRW(sz:Long,poolSize:Int) implements ParallelSolverI {
 	    accStats.printAVG(count);
 	}
 	public def tryInsertVector(cost:Int, variables:Rail[Int]{self.size==sz}, place:Int) {
-	    ep.tryInsertVector(cost, variables, place);
+		commM.ep.tryInsertVector(cost, variables, place);
 	}
-	public def getRemoteData():Maybe[CSPSharedUnit(sz)]=ep.getRemoteData();
-	public def worstCost()=ep.worstCost;
+	public def getRemoteData():Maybe[CSPSharedUnit(sz)]=commM.ep.getRemoteData();
+	
 	public def clear(){
 		winnerLatch.set(false);
-		ep.clear();
+		commM.restartPool();
 	}
 	public def accStats(c:CSPStats):void {
 	    accStats.accStats(c);
 	}
 	
 }
-public type ASSolverPermutRW(s:Long)=ASSolverPermutRW{self.sz==s};
+public type PlacesMultiWalks(s:Long)=PlacesMultiWalks{self.sz==s};

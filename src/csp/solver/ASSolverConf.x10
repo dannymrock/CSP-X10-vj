@@ -165,23 +165,6 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 		}
 		return false;
 	}
-	
-	
-	public def getWorstCostInPool():Int = {
-	    val ss=solvers;
-	    at(communicationTarget()) ss().worstCost()
-	}
-	
-	
-	public def restartPool():void {
-	    val ss = solvers;
-	    at(communicationTarget()) ss().clear();
-	}
-	
-	
-	public def updateVector(variables:Rail[Int], totalcost:Int){
 		
-		
-	}
 }
 public type ASSolverConf(s:Long)=ASSolverConf{self.sz==s};

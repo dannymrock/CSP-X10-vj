@@ -60,7 +60,7 @@ public class Main {
 		val solverMode  = opts("-m", 0n);
 		val threads     = opts("-t", 0n);
 		val comm        = opts("-c", 0n);
-		val intraTI     = opts("-i", 100n);
+		val intraTI     = opts("-i", 0n);
 		val interTI     = opts("-j", 0n);
 		val nodesPTeam  = opts("-n", 1n);
 		val poolSize    = opts("-k", 4n);
@@ -69,9 +69,9 @@ public class Main {
 		//at(Main.param) Main.param().poolSize = poolSize;
 
 		Console.OUT.println("CSP Problem: "+cspProblem+" Size: "+size+"\nNumber of repetitions: "+testNo+
-							"\nSolverMode: "+(solverMode==0n ?"Independent":"Cooperative" )+"\nCommunication strategy: "+comm+
-				            "\nIntra-Team Comm. inteval: "+intraTI+"\nInter-Team Comm. inteval: "+interTI+
-				            "\nMinimum permissible distance: "+minDistance+
+							"\nSolverMode: "+(solverMode==0n ?"Only Places":"Hybrid (Places and Activities)")+
+							"\nCommunication strategy: "+comm+"\nIntra-Team Comm. inteval: "+intraTI+
+							"\nInter-Team Comm. inteval: "+interTI+"\nMinimum permissible distance: "+minDistance+
 							"\nPool Size: "+poolSize);
 		
 		var param : Int = UNKNOWN_PROBLEM;
@@ -126,11 +126,11 @@ public class Main {
 		val solvers:PlaceLocalHandle[ParallelSolverI(vectorSz)];
 		if (solverMode == 0n){
 			Console.OUT.println("Using multi-walks with "+Place.MAX_PLACES+" Places");
-			Console.OUT.println("There are "+Place.MAX_PLACES+" teams each one with "+nodesPTeam+" explorer places. "+
-					Place.MAX_PLACES*nodesPTeam+" explorers in total (places)");
+			Console.OUT.println("There are "+Place.MAX_PLACES/nodesPTeam+" teams each one with "+nodesPTeam+" explorer places. "+
+					Place.MAX_PLACES+" explorers in total (places)");
 			
 			solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
-					()=>new ASSolverPermutRW(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz));
+					()=>new PlacesMultiWalks(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz));
 			
 		} else{
 			Console.OUT.println("Using multi-walks with "+Place.MAX_PLACES+" places and "+nodesPTeam+" activities");
@@ -138,7 +138,7 @@ public class Main {
 					" explorer activities. "+Place.MAX_PLACES*nodesPTeam+" explorers in total (places and activities)");
 			
 			solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
-					()=>new CooperativeMW(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz));
+					()=>new HybridMultiWalks(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz));
 		}
 		
 		Console.OUT.println("|Count| Time (s) |  Iters   | Place |  LocMin  |  Swaps   |  Resets  | Sa/It |ReSta| Change|  FR |");

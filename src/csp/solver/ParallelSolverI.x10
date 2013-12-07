@@ -19,11 +19,6 @@ public interface ParallelSolverI {
     def clear():void;
 
     /**
-     * Current worst cost for the problem.
-     */
-    def worstCost():Int;
-
-    /**
      * Solves the problem, which is specified by cspGen. We expect (but this is not checked in the code) that
      * all instances of the ParallelSolverI frame (one in each place) is solving the same problem.
      */

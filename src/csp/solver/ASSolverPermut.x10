@@ -265,6 +265,7 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 		nbSameVarTot += nbSameVar;
 		nbLocalMinTot += nbLocalMin; 
 		
+		Logger.debug(()=>{"   ASSolverPermut: Finish search with cost: "+total_cost});
 		//creating an error
 		//csp_.swapVariables(1n,150n);
 		//csp_.swapVariables(1n,2n);

@@ -3,7 +3,7 @@ import csp.util.*;
 import x10.util.concurrent.AtomicBoolean;
 import x10.compiler.Inline;
 
-public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
+public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI {
 	property sz()=sz;
 	var csp_:Rail[ModelAS(sz)];
 	var solver:Rail[ASSolverPermut(sz)];
@@ -14,11 +14,7 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 	var stats:CSPStats = null;
 	var accStats:CSPStats = null;
 	/** Comunication Variables*/
-	val ep = new ElitePool( sz, poolSize ); 
-	//val thEnable : Int; 
-	
-	var conf: ASSolverConf(sz); // var because it needs to be set in solve.
-	
+	var commM : CommManager(sz);
 	
 	//???
 	val updateI : Int;
@@ -54,11 +50,15 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 		var extTime : Long = -System.nanoTime();
 		
 		var nsize:Int = size;
-		
-		conf = new ASSolverConf(sz, 1n /*ASSolverConf.USE_PLACES*/, solvers, updateI,0n, commOption, poolSize, nTeams );
+		commM = new CommManager(sz, 1n, solvers, updateI,0n, commOption, poolSize, nTeams );
 		val ss = st() as ParallelSolverI(sz);
+
+		Logger.debug(()=>{"  HybridMultiWalks: spawning explorer activities "});
 		
 		finish for (exID in csp_.range()) async {
+		
+			Logger.debug(()=>{"  HybridMultiWalks: explorer activity "+exID+" ready"});
+			
 			csp_(exID) = cspGen(); // use the supplied generator to generate the problem
 			solver(exID) = new ASSolverPermut(sz, nsize, here.id, ss);
 			
@@ -69,6 +69,8 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 			if (cost == 0n){ 
 				// An explorer has found a solution! Huzzah! 
 				// Light the candles! Kill the blighters!
+
+				Logger.debug(()=>{"  HybridMultiWalks: explorer activity "+exID+" has found a solution"});
 				val home = here.id;
 				val winner:Boolean;
 				finish winner = at(Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
@@ -80,7 +82,7 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 					time += System.nanoTime();
 					setStats(solvers, exID, time);
 					//Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
-					Console.OUT.println("Solution is " + (csp_(exID).verified()? "ok" : "WRONG"));
+					Console.OUT.print("Solution is " + (csp_(exID).verified()? "ok " : "WRONG "));
 					//csp_(exID).displaySolution();
 				}
 			}	
@@ -89,10 +91,10 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 	
 	public def announceWinner(ss:PlaceLocalHandle[ParallelSolverI(sz)], p:Long):Boolean {
 		val result = winnerLatch.compareAndSet(false, true);
-		// Logger.info(()=> "announceWinner result=" + result + " for " + p + " this=" + this );
+		Logger.debug(()=> "  HybridMultiWalks: announceWinner result=" + result + " for " + p + " this=" + this );
 		if (result) {
 			for (k in Place.places()) 
-				if (p != k.id) 
+				//if (p != k.id) // I need to kill the remaining explorers in the same place (hybrid model) 
 					at(k) async ss().kill();
 		}
 		return result;
@@ -105,7 +107,7 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 	
 	public def clear():void {
 		winnerLatch.set(false);
-		ep.clear();
+		commM.restartPool();
 	}
 	
 	/**
@@ -147,32 +149,21 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 	
 	// Communication functions
 	
-	public def communicate(var totalCost:Int, var variables:Rail[Int]{self.size==sz}) {
-		ep.tryInsertVector(totalCost, variables, here.id  as Int);
+	// public def communicate(var totalCost:Int, var variables:Rail[Int]{self.size==sz}) {
+	// 	ep.tryInsertVector(totalCost, variables, here.id  as Int);
+	// }
+	public def communicate(totalCost:Int, variables:Rail[Int]{self.size==sz}){
+		commM.communicate(totalCost, variables);
 	}
+	@Inline public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean 
+	= commM.getIPVector(csp_, myCost);
 			
 	public def getRemoteData():Maybe[CSPSharedUnit(sz)] {
 		// TODO: auto-generated method stub
 		return null;
 	}
-				
-	public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean {
-		val a = ep.getRemoteData();
-		//if ( a!=null && (myCost + delta) > a().cost ){
-		// put it in a container class
-		if ( a!=null && myCost > a().cost ){
-			csp_.setVariables(a().vector);
-			return true; 
-		}
-		return false;
-	}
 			
-	@Inline public def intraTI():Int = conf.intraTI;
-	
-	public def worstCost():Int {
-		// TODO: auto-generated method stub
-		return 0N;
-	}
+	@Inline public def intraTI():Int = commM.intraTI;
 	
 	public def tryInsertVector(var cost:Int, var variables:Rail[Int]{self.size==sz}, var place:x10.
 			lang.Int):void {
@@ -180,3 +171,4 @@ public class CooperativeMW (sz:Long,poolSize:Int) implements ParallelSolverI {
 	}
 						
 }
+public type HybridMultiWalks(s:Long)=HybridMultiWalks{self.sz==s};

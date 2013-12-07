@@ -65,7 +65,7 @@ public class Monitor {
     public def on[T](cond:()=>Boolean, action:()=>T):T {
         try {
             lock();
-            Logger.debug(() => "Monitor: "+ this +  " 0 trying cond " + cond);
+            //Logger.debug(() => "Monitor: "+ this +  " 0 trying cond " + cond);
             
             while (!cond()) {
                 val thisWorker = Runtime.worker();
@@ -75,15 +75,15 @@ public class Monitor {
                     Logger.log(suspending);
                     unlock();
                     Worker.park();
-                    Logger.debug(retrying);
+                    //Logger.debug(retrying);
                     lock();
                 }
             }
-            Logger.debug(()=>"Monitor: " + this  + " 1 action " + action);
+            //Logger.debug(()=>"Monitor: " + this  + " 1 action " + action);
             val result=action();
             // now awaken everyone to try.
             val m=size;
-            Logger.debug(() => "Monitor : " + this + " 2 awakening size=" + m);
+            //Logger.debug(() => "Monitor : " + this + " 2 awakening size=" + m);
             for (var i:Int = 0n; i<m; ++i) {
                 size--;
                 //Logger.debug((i:Int)=> "Monitor: " + this + " 3 (" + i + ") waking " 
@@ -91,7 +91,7 @@ public class Monitor {
                 threads(size).unpark();
                 threads(size)=null;
             }
-            Logger.debug(() => "Monitor: " + this + " 4 done.");
+            //Logger.debug(() => "Monitor: " + this + " 4 done.");
             return result;
         } finally {
             unlock();
