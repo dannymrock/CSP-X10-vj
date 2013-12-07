@@ -123,7 +123,7 @@ public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {
 		    	setStats(solvers);
 		    	//Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
 		    	Console.OUT.println("Solution is " + (csp_.verified()? "ok" : "WRONG"));
-		    	//csp_.displaySolution();
+		    	csp_.displaySolution();
 		    }
 		}
 		extTime += System.nanoTime();

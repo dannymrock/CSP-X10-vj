@@ -9,6 +9,7 @@ public class StableMarriageAS extends ModelAS {
 	var nbBlockingPairs:Int;
 	
 	val nbBPperMan : Rail[Int];
+	val variablesW : Rail[Int];
 	
 	/**
 	 * Preference table for stable marriage problem
@@ -40,6 +41,7 @@ public class StableMarriageAS extends ModelAS {
 		super(lengthProblem, seed );
 		nbBlockingPairs = 0n;
 		nbBPperMan = new Rail[Int](length,0n);
+		variablesW = new Rail[Int](length,0n);
 		initParameters();
 		
 		menPref = new Rail[Rail[Int]](length); 
@@ -60,16 +62,28 @@ public class StableMarriageAS extends ModelAS {
 	 */
 	private def initParameters(){
 		
-		solverParams.probSelectLocMin = 66n;
-		solverParams.freezeLocMin = 1n;
+		solverParams.probSelectLocMin =  50n;
+		solverParams.freezeLocMin = 8n;
 		solverParams.freezeSwap = 0n;
-		solverParams.resetLimit = 5n;
-		solverParams.resetPercent = 25n;
-		solverParams.restartLimit = 100n;
-		solverParams.restartMax = 10n;
+		solverParams.resetLimit = 1n;
+		solverParams.resetPercent = 4n;
+		solverParams.restartLimit = 1000000n;
+		solverParams.restartMax = 0n;
 		solverParams.baseValue = 0n;
 		solverParams.exhaustive = false;
 		solverParams.firstBest = false;
+		
+		// solverParams.probSelectLocMin = 66n;
+		// solverParams.freezeLocMin = 1n;
+		// solverParams.freezeSwap = 0n;
+		// solverParams.resetLimit = 5n;
+		// solverParams.resetPercent = 25n;
+		// solverParams.restartLimit = 100n;
+		// solverParams.restartMax = 10n;
+		// solverParams.baseValue = 0n;
+		// solverParams.exhaustive = false;
+		// solverParams.firstBest = false;
+	
 		// solverParams.probSelectLocMin = 6n;
 		// solverParams.freezeLocMin = 5n;
 		// solverParams.freezeSwap = 0n;
@@ -88,33 +102,62 @@ public class StableMarriageAS extends ModelAS {
 	 * 	@return cost
 	 */
 	public def costOfSolution( shouldBeRecorded : Int ) : Int {
-		nbBlockingPairs = 0n;
-		nbBPperMan.clear();
-		var m:Int;
-		//pw : M-partner of w
-		var pw:Int;
-		//pm : M-partner of m
-		var pm:Int;
-		//For each man
-		for(m=0n; m<length;m++){
+		// nbBlockingPairs = 0n;
+		// nbBPperMan.clear();
+		// var m:Int;
+		// //pw : M-partner of w
+		// var pw:Int;
+		// //pm : M-partner of m
+		// var pm:Int;
+		// //For each man
+		// for(m=0n; m<length;m++){
+		// 	pm = variables(m);
+		// 	// Obtain prefereces of this man
+		// 	val manPref = menPref(m); 
+		// 	// for each w such that m prefers w to pm
+		// 	for(w in manPref){
+		// 		if(w==pm) break;
+		// 		//if w prefers m to pw is a BP
+		// 		//finding current w partner (index in variables)
+		// 		pw = find(variables,w);
+		// 		val womanPref = womenPref(w);
+		// 		var j:Int=0n;
+		// 		for(m1 in womanPref){
+		// 			if (m1==pw) break;
+		// 			if(m1==m){
+		// 				nbBlockingPairs++;
+		// 				nbBPperMan(m)++;
+		// 			}
+		// 		}
+		// 	}Int
+		// }
+		// return nbBlockingPairs;
+		
+		
+		var w:Int, m1:Int;
+		var i:Int, j:Int;
+		var pm:Int, pw:Int; //w_of_m, m_of_w;
+		var r:Int = 0n;
+
+		if(shouldBeRecorded==1n) nbBPperMan.clear();
+		for (m in variables.range())
+			variablesW(variables(m)) = m as Int;
+		
+		
+		for (m in variables.range()){
 			pm = variables(m);
-			// Obtain prefereces of this man
-			val manPref = menPref(m); 
-			// for each w such that m prefers w to pm
-			for(w in manPref){
-				if(w==pm) break;
-				val womanPref = womenPref(w);
-				pw = find(variables,w);
-				var j:Int=0n;
-				for(j=0n; j<pw; j++){
-					if(womanPref(j)==m){
-						nbBlockingPairs++;
-						nbBPperMan(m)++;
+			for(i = 0n; (w = menPref(m)(i)) != pm; i++){
+				pw = variablesW(w);
+				for(j = 0n; (m1 = womenPref(w)(j)) != pw; j++){
+					if (m1 == m as Int){
+						r++;
+						if(shouldBeRecorded==1n)nbBPperMan(m)++;
 					}
 				}
+				
 			}
 		}
-		return nbBlockingPairs;
+		return r;
 	}
 	
 	/** 
@@ -189,28 +232,24 @@ public class StableMarriageAS extends ModelAS {
 	 */
 
 	public  def verified():Boolean {
-		var m:Int;
-		//pw : M-partner of w
-		var pw:Int;
-		//pm : M-partner of m
-		var pm:Int;
-		//For each man
-		for(m=0n; m<length;m++){
+		var w:Int, m1:Int;
+		var i:Int, j:Int;
+		var pm:Int, pw:Int; //w_of_m, m_of_w;
+		var r:Int = 0n;
+
+		variablesW.clear();
+		for (m in variables.range())
+			variablesW(variables(m)) = m as Int;
+		
+		for (m in variables.range()){
 			pm = variables(m);
-			// Obtain prefereces of this man
-			val manPref = menPref(m); 
-			// for each w such that m prefers w to pm
-			for(w in manPref){
-				if(w==pm) break;
-				val womanPref = womenPref(w);
-				pw = find(variables,w);
-				var j:Int=0n;
-				for(j=0n; j<pw; j++){
-					if(womanPref(j) == m){
-						Console.OUT.println("Not stable marriage blocking pair m:"+m+", w:"+w);
+			for(i = 0n; (w = menPref(m)(i)) != pm; i++){
+				pw = variablesW(w);
+				for(j = 0n; (m1 = womenPref(w)(j)) != pw; j++){
+					if (m1 == m as Int){
+						Console.OUT.println("Not stable marriage, blocking pair m: "+m+", w: "+w);
 						return false;
 					}
-						
 				}
 				
 			}
