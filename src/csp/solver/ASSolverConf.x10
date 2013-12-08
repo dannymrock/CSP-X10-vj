@@ -157,7 +157,7 @@ public class ASSolverConf(sz:Long, poolSize:Int) {
 	    val place:Place=communicationTarget();
 		val ss=solvers;
 		val a : Maybe[CSPSharedUnit(sz)];
-		finish a = at(place) ss().getRemoteData();
+		finish a = at(place) ss().getPoolData();
 		//if (place.id==0)Console.OUT.println(here+" comm to "+place+" and get "+a().cost);
 		if ( a!=null && (myCost + delta) > a().cost ){					 
 		    csp_.setVariables(a().vector);

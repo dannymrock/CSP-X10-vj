@@ -30,6 +30,7 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 	var total_cost : Int;
 	val random = new RandomTools(seed);
 	var kill : Boolean=false;
+	var forceRestart : Boolean = false;
 	
 	var list_i_nb : Int;
 	var list_j_nb : Int;
@@ -44,8 +45,9 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 	
 	/**	Statistics	*/
 	var nbRestart : Int=0n;
+	var nbForceRestart : Int=0n;
 	var nbIter : Int;
-	var nbReset : Int;	
+	var nbReset : Int;
 	var nbSwap : Int;
 	var nbSameVar : Int;
 	var nbLocalMin : Int;
@@ -96,6 +98,7 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 		list_i.clear();
 		
 		nbRestart = 0n;
+		nbRestart = 0n;
 		nbSwap = 0n;
 		nbIter = 0n;
 		nbSameVar = 0n;
@@ -126,28 +129,15 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 	  
 			if (nbIter >= solverP.restartLimit){
 				if(nbRestart < solverP.restartMax){
+					//restart
+					forceRestart = false;
 					csp_.initialize(solverP.baseValue); //Set_Init_Configuration Random Permut
-					mark.clear();
 					nbRestart++;
-					//Update Total statistics
-					nbIterTot += nbIter;
-					nbResetTot += nbReset;	
-					nbSwapTot += nbSwap;
-					nbSameVarTot += nbSameVar;
-					nbLocalMinTot += nbLocalMin; 
-					//Restart local var
-					nbSwap = 0n;
-					nbIter = 0n;
-					nbSameVar = 0n;
-					nbLocalMin = 0n;
-					nbReset = 0n;
-					nb_in_plateau = 0n;
-					
+					restartVar();
 					best_cost = total_cost = csp_.costOfSolution(1n);
 					best_of_best = x10.lang.Int.MAX_VALUE ;
-					//restart pool?
+					nb_in_plateau = 0n;
 					solver.clear();
-					//Console.OUT.println("Restart...");
 					continue;
 				}
 				//Console.OUT.println("Not solution found");
@@ -253,6 +243,20 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 	 		        //myComm.printVectors();
 	 		        //Main.show("Vector ",csp.variables);
 	 		        
+	 		}
+	 		
+	 		if (forceRestart){
+	 			//restart
+	 			Logger.debug(()=>"   ASSolverPermut : force Restart");
+	 			forceRestart = false;
+	 			csp_.initialize(solverP.baseValue); //Set_Init_Configuration Random Permut
+	 			nbForceRestart++;
+	 			restartVar();
+	 			best_cost = total_cost = csp_.costOfSolution(1n);
+	 			best_of_best = x10.lang.Int.MAX_VALUE ;
+	 			nb_in_plateau = 0n;
+	 			solver.clear();
+	 			continue;
 	 		}
 	 		// ----- end of interaction with other solvers -----
 	 		
@@ -530,5 +534,28 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 		
 		return timeEnd-timeStart;
 	}
+	
+	public def forceRestart(){
+		forceRestart = true;
+	}
+	
+	public def restartVar(){
+		mark.clear();
+		//nbRestart++;			
+		//Update Total statistics
+		nbIterTot += nbIter;
+		nbResetTot += nbReset;        
+		nbSwapTot += nbSwap;
+		nbSameVarTot += nbSameVar;
+		nbLocalMinTot += nbLocalMin; 
+		//Restart local var
+		nbSwap = 0n;
+		nbIter = 0n;
+		nbSameVar = 0n;
+		nbLocalMin = 0n;
+		nbReset = 0n;
+		
+	}
+	
 }
 public type ASSolverPermut(s:Long)=ASSolverPermut{self.sz==s};

@@ -70,7 +70,7 @@ public class StableMarriageAS extends ModelAS {
 		solverParams.restartLimit = 1000000n;
 		solverParams.restartMax = 0n;
 		solverParams.baseValue = 0n;
-		solverParams.exhaustive = false;
+		solverParams.exhaustive = true;
 		solverParams.firstBest = false;
 		
 		// solverParams.probSelectLocMin = 66n;

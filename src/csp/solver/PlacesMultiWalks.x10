@@ -192,7 +192,7 @@ public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {
 	public def tryInsertVector(cost:Int, variables:Rail[Int]{self.size==sz}, place:Int) {
 		commM.ep.tryInsertVector(cost, variables, place);
 	}
-	public def getRemoteData():Maybe[CSPSharedUnit(sz)]=commM.ep.getRemoteData();
+	public def getPoolData():Maybe[CSPSharedUnit(sz)]=commM.ep.getRemoteData();
 	
 	public def clear(){
 		winnerLatch.set(false);
@@ -200,6 +200,10 @@ public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {
 	}
 	public def accStats(c:CSPStats):void {
 	    accStats.accStats(c);
+	}
+	
+	public def getCurrentData():Maybe[CSPSharedUnit(sz)]{
+		return null;
 	}
 	
 }

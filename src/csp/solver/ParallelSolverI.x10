@@ -70,7 +70,9 @@ public interface ParallelSolverI {
     def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int,
             fr : Int):void;
 
-    def getRemoteData():Maybe[CSPSharedUnit(sz)];
+    def getPoolData():Maybe[CSPSharedUnit(sz)];
+    
+    def getCurrentData():Maybe[CSPSharedUnit(sz)];
 
     def accStats(CSPStats):void;
     def printStats(count:Int):void;

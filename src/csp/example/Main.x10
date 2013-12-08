@@ -138,7 +138,7 @@ public class Main {
 					" explorer activities. "+Place.MAX_PLACES*nodesPTeam+" explorers in total (places and activities)");
 			
 			solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
-					()=>new HybridMultiWalks(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz));
+					()=>new HybridMultiWalks(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam, minDistance) as ParallelSolverI(vectorSz));
 		}
 		
 		Console.OUT.println("|Count| Time (s) |  Iters   | Place |  LocMin  |  Swaps   |  Resets  | Sa/It |ReSta| Change|  FR |");

@@ -1,7 +1,7 @@
 package csp.solver;
 
 import csp.util.*;
-import csp.util.Maybe;
+
 /**	This class containts all the basic CommManager configuration info, for the
  * 	Adaptive search solver x10 implementation ASSolverPermut
  * 	
@@ -47,7 +47,6 @@ public class CommManager(sz:Long, poolSize:Int) {
 	val nbTeams : Int;
 	val myTeamId : Int;
 	val random = new x10.util.Random();
-	
 	
 	/**
 	 * The reference to all team members, for communication.
@@ -133,7 +132,7 @@ public class CommManager(sz:Long, poolSize:Int) {
 			if (place == here )
 				a = ep.getRemoteData();
 			else{
-				finish a = at(place) ss().getRemoteData();
+				finish a = at(place) ss().getPoolData();
 			}
 			//if (place.id==0)Console.OUT.println(here+" comm to "+place+" and get "+a().cost);
 			if ( a!=null && (myCost + delta) > a().cost ){					 
@@ -159,6 +158,8 @@ public class CommManager(sz:Long, poolSize:Int) {
 		Logger.debug(()=>"CommManager: clear Pool.");
 		ep.clear();
 	}
+	
+	
 	
 }
 public type CommManager(s:Long)=CommManager{self.sz==s};
