@@ -47,8 +47,8 @@ public class Main {
 		    Option("m", "", "Solver mode distribution 0 for Places \"n\" for Activities (n number of activities). Default 0."),
 		    Option("t", "", "Using threads."),
 		    Option("c", "", "Communication option: 0 no comm 1 for \"place 0\", 2 for all-to-all and 3 for neighbors"),
-		    Option("i", "", "Intra-team Communication Interval (iterations) . Default 1."),
-		    Option("j", "", "Inter-team Communication Interval (iterations) . Default 0."),
+		    Option("i", "", "Intra-team Communication Interval (iterations) . Default 0 - no communication."),
+		    Option("j", "", "Inter-team Communication Interval (tim miliseconds) . Default 0 - no communication."),
 		    Option("n", "", "nodes_per_team parameter. Default 4."),
 		    Option("k", "", "poolsize."),
 		    Option("d", "", "minimum permisible distance.")
@@ -61,7 +61,7 @@ public class Main {
 		val threads     = opts("-t", 0n);
 		val comm        = opts("-c", 0n);
 		val intraTI     = opts("-i", 0n);
-		val interTI     = opts("-j", 0n);
+		val interTI     = opts("-j", 0);
 		val nodesPTeam  = opts("-n", 1n);
 		val poolSize    = opts("-k", 4n);
 		val minDistance = opts("-d", 0.3);
@@ -70,8 +70,8 @@ public class Main {
 
 		Console.OUT.println("CSP Problem: "+cspProblem+" Size: "+size+"\nNumber of repetitions: "+testNo+
 							"\nSolverMode: "+(solverMode==0n ?"Only Places":"Hybrid (Places and Activities)")+
-							"\nCommunication strategy: "+comm+"\nIntra-Team Comm. inteval: "+intraTI+
-							"\nInter-Team Comm. inteval: "+interTI+"\nMinimum permissible distance: "+minDistance+
+							"\nCommunication strategy: "+comm+"\nIntra-Team Comm. inteval: "+intraTI+"iterations"+
+							"\nInter-Team Comm. inteval: "+interTI+"milliseconds"+"\nMinimum permissible distance: "+minDistance+
 							"\nPool Size: "+poolSize);
 		
 		var param : Int = UNKNOWN_PROBLEM;
@@ -130,7 +130,7 @@ public class Main {
 					Place.MAX_PLACES+" explorers in total (places)");
 			
 			solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
-					()=>new PlacesMultiWalks(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz));
+					()=>new PlacesMultiWalks(vectorSz, intraTI, interTI, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz));
 			
 		} else{
 			Console.OUT.println("Using multi-walks with "+Place.MAX_PLACES+" places and "+nodesPTeam+" activities");
@@ -138,7 +138,7 @@ public class Main {
 					" explorer activities. "+Place.MAX_PLACES*nodesPTeam+" explorers in total (places and activities)");
 			
 			solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
-					()=>new HybridMultiWalks(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam, minDistance) as ParallelSolverI(vectorSz));
+					()=>new HybridMultiWalks(vectorSz, intraTI, interTI, threads, poolSize, nodesPTeam, minDistance) as ParallelSolverI(vectorSz));
 		}
 		
 		Console.OUT.println("|Count| Time (s) |  Iters   | Place |  LocMin  |  Swaps   |  Resets  | Sa/It |ReSta| Change|  FR |");

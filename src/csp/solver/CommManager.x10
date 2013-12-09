@@ -37,7 +37,7 @@ public class CommManager(sz:Long, poolSize:Int) {
 	var interTI : Int;
 	
 	/** inter-places reset enable */
-	var commOption : Int;
+	//var commOption : Int;
 	
 	/** probability of change vector if bad cost */
 	//val pChange : Int;
@@ -54,13 +54,13 @@ public class CommManager(sz:Long, poolSize:Int) {
 	val solvers:PlaceLocalHandle[ParallelSolverI(sz)];
 	
 	def this( sz:Long, solverModeIn : Int , ss: PlaceLocalHandle[ParallelSolverI(sz)], 
-	        intraTeamI : Int, interTeamI : Int , cOption : Int , ps : Int, nT : Int){
+	        intraTeamI : Int, interTeamI : Int ,  ps : Int, nT : Int){
 		property(sz, ps);
 		solvers = ss;
 	    solverMode = solverModeIn;
 		intraTI = intraTeamI;
 		interTI = interTeamI;
-		commOption = cOption;
+		//commOption = cOption;
 		nbTeams = nT;
 		myTeamId = here.id as Int % nbTeams;
 		val m = myTeamId; //???

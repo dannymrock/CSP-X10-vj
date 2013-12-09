@@ -40,7 +40,7 @@ public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {
     var time:Long;
 	
     val updateI : Int;
-    val commOption : Int;
+    //val commOption : Int;
 	
     var bcost : Int;
     val stats = new CSPStats();
@@ -54,10 +54,10 @@ public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {
     /**
      * 	Constructor of the class
      */
-    public def this(vectorSize:Long, upI : Int, commOpt : Int , thread : Int , ps : Int, npT : Int ){
+    public def this(vectorSize:Long, upI : Int, interTI : Long , thread : Int , ps : Int, npT : Int ){
 	property(vectorSize,ps);
 	updateI = upI; 
-	commOption = commOpt;
+	//commOption = commOpt;
 	nbExplorerPT = npT; // will be a parameter 
 	nTeams = Place.MAX_PLACES as Int / nbExplorerPT ;
     }
@@ -86,7 +86,7 @@ public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {
 	csp_ = cspGen(); // use the supplied generator to generate the problem
 		
 	//conf = new ASSolverConf(sz, 1n /*ASSolverConf.USE_PLACES*/, solvers, updateI,0n, commOption, poolSize, nTeams );
-	commM = new CommManager(sz, 0n , solvers, updateI,0n, commOption, poolSize, nTeams );
+	commM = new CommManager(sz, 0n , solvers, updateI,0n, poolSize, nTeams );
 	val ss = st() as ParallelSolverI(sz);
 	//solver = new ASSolverPermut(sz, nsize, seed, ss);
 		

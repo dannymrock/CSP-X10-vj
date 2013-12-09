@@ -21,21 +21,25 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	
 	//???
     val updateI : Int;
-    val commOption : Int;
+    //val commOption : Int;
+    val interTeamInterval:Long;
 	
     val winnerLatch = new AtomicBoolean(false);
 	
     //var time:Long;
 	val minDistance : Double;
 	
+	var interTeamDone:Boolean=false;
+	
 	/**
 	 * 	Constructor of the class
 	 */
-	public def this(vectorSize:Long, upI : Int, commOpt : Int , thread : Int , ps : Int, npT : Int, minD:Double ){
+	public def this(vectorSize:Long, upI : Int, interTI : Long , thread : Int , ps : Int, npT : Int, minD:Double ){
 		property(vectorSize,ps);
 		updateI = upI; 
-		commOption = commOpt;
+		//commOption = commOpt;
 		// thEnable = thread;
+		interTeamInterval = interTI;
 		 
 		nbExplorerPT = npT; // will be a parameter 
 		nTeams = Place.MAX_PLACES as Int / nbExplorerPT;
@@ -53,25 +57,14 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	    var extTime : Long = -System.nanoTime();
 		
 	    var nsize:Int = size;
-	    commM = new CommManager(sz, 1n, solvers, updateI,0n, commOption, poolSize, nTeams );
+	    commM = new CommManager(sz, 1n, solvers, updateI,0n, poolSize, nTeams );
 	    val ss = st() as ParallelSolverI(sz);
 
 	    Logger.debug(()=>{"  HybridMultiWalks: spawning explorer activities "});
 		
 		finish{
-            async
-                while (! done) {
-                  val r = new Random();
-
-                  //Runtime.worker().sleep(SLEEP_INTERVAL);
-                  if (! System.sleep(SLEEP_INTERVAL)) break;
-                  // woken up
-                  Logger.debug(()=>{" CommManager - run : woken up"});
-                  if(r.nextInt(100n) < 25n) interTeamComm(st);			
-                  // get current conf from here (randomly choose one explorer)
-                  // check the distance against a anotherandom place.
-                  // if distance is lower than minimum distans permited, execute corrective action.
-                }
+			if (interTeamInterval!=0) async interTeamActivity(solvers);
+                
 			for (exID in csp_.range()) async {
 				
 				Logger.debug(()=>{"  HybridMultiWalks: explorer activity "+exID+" ready"});
@@ -121,12 +114,13 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	
 	
 	public def kill() {
-		done=true;
+		interTeamDone = true;
 		for (s in solver) s.kill=true;
 	}
 	
     public def clear():void {
 	    winnerLatch.set(false);
+	    interTeamDone = false;
 	    commM.restartPool();
     }
 	
@@ -171,6 +165,24 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	
     // Communication functions
 	
+    public def interTeamActivity(st:PlaceLocalHandle[ParallelSolverI(sz)]){
+    	while (! interTeamDone) {
+    		val r = new Random();
+
+    		//Runtime.worker().sleep(SLEEP_INTERVAL);
+    		if (!System.sleep(interTeamInterval)){ 
+    			Logger.info(()=>"interTeamActivity error: cannot execute sleep");
+    			break;
+    		}
+    		// woken up
+    		Logger.debug(()=>{" interTeamActivity - run : woken up (every "+interTeamInterval+" ms)"});
+    		if(r.nextInt(100n) < 25n) interTeamComm(st);			
+    		// get current conf from here (randomly choose one explorer)
+    		// check the distance against a anotherandom place.
+    		// if distance is lower than minimum distans permited, execute corrective action.
+    	}
+    }
+    
     // public def communicate(var totalCost:Int, var variables:Rail[Int]{self.size==sz}) {
     // 	ep.tryInsertVector(totalCost, variables, here.id  as Int);
     // }
@@ -201,11 +213,7 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	}
 	
 	
-	val SLEEP_INTERVAL= 1000;
-	var done:Boolean=false;
-	def run(ss: PlaceLocalHandle[ParallelSolverI(sz)]): void {
-		
-	}	
+	//val SLEEP_INTERVAL= 1000;
 	
 	public def interTeamComm(ss:PlaceLocalHandle[ParallelSolverI(sz)]){
 		Logger.debug(()=>{"MW - interTeamComm : entering..."});
@@ -237,7 +245,7 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	
 	def distance(conf1 : Valuation(sz), conf2 : Valuation(sz)) : Double {
 		var count : Int = 0n;
-		for (i in 0n..(sz as Int)){
+		for (i in 0n..(sz as Int - 1n)){
 			//Logger.debug("comparing: "+conf1(i)+" - "+conf2(i));
 			if(conf1(i) == conf2(i)) count++; 
 		}
