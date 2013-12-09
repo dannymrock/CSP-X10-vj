@@ -5,25 +5,27 @@ import x10.compiler.Inline;
 import x10.util.Random;
 
 public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI {
-	property sz()=sz;
-	var csp_:Rail[ModelAS(sz)];
-	var solver:Rail[ASSolverPermut(sz)];
+    property sz()=sz;
+    val csp_:Rail[ModelAS(sz)];
+    val solver:Rail[ASSolverPermut(sz)];
 	
-	//Hybrid approach
-	val nbExplorerPT : Int;
-	val nTeams : Int;
-	var stats:CSPStats = null;
-	var accStats:CSPStats = null;
-	/** Comunication Variables*/
-	var commM : CommManager(sz);
+    //Hybrid approach
+    val nbExplorerPT : Int;
+    val nTeams : Int;
+    
+    val stats = new CSPStats();
+    val accStats = new CSPStats();
+    
+    /** Comunication Variables*/
+    var commM : CommManager(sz);
 	
 	//???
-	val updateI : Int;
-	val commOption : Int;
+    val updateI : Int;
+    val commOption : Int;
 	
-	val winnerLatch = new AtomicBoolean(false);
+    val winnerLatch = new AtomicBoolean(false);
 	
-	//var time:Long;
+    //var time:Long;
 	val minDistance : Double;
 	
 	/**
@@ -31,8 +33,6 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	 */
 	public def this(vectorSize:Long, upI : Int, commOpt : Int , thread : Int , ps : Int, npT : Int, minD:Double ){
 		property(vectorSize,ps);
-		accStats = new CSPStats();
-		stats = new CSPStats();
 		updateI = upI; 
 		commOption = commOpt;
 		// thEnable = thread;
@@ -46,21 +46,32 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	}
 	
 	
-	public def solve(st:PlaceLocalHandle[ParallelSolverI(sz)], cspGen:()=>ModelAS(sz) ):void { 
-		val solvers= st;
-		assert solvers() == this : "Whoa, basic plumbing problem -- I am not part of solvers!";
-		val size = sz as Int;
-		var extTime : Long = -System.nanoTime();
+    public def solve(st:PlaceLocalHandle[ParallelSolverI(sz)], cspGen:()=>ModelAS(sz) ):void { 
+	    val solvers= st;
+	    assert solvers() == this : "Whoa, basic plumbing problem -- I am not part of solvers!";
+	    val size = sz as Int;
+	    var extTime : Long = -System.nanoTime();
 		
-		var nsize:Int = size;
-		commM = new CommManager(sz, 1n, solvers, updateI,0n, commOption, poolSize, nTeams );
-		val ss = st() as ParallelSolverI(sz);
+	    var nsize:Int = size;
+	    commM = new CommManager(sz, 1n, solvers, updateI,0n, commOption, poolSize, nTeams );
+	    val ss = st() as ParallelSolverI(sz);
 
-		Logger.debug(()=>{"  HybridMultiWalks: spawning explorer activities "});
+	    Logger.debug(()=>{"  HybridMultiWalks: spawning explorer activities "});
 		
 		finish{
-			//async{
-			run(solvers);//}
+            async
+                while (! done) {
+                  val r = new Random();
+
+                  //Runtime.worker().sleep(SLEEP_INTERVAL);
+                  if (! System.sleep(SLEEP_INTERVAL)) break;
+                  // woken up
+                  Logger.debug(()=>{" CommManager - run : woken up"});
+                  if(r.nextInt(100n) < 25n) interTeamComm(st);			
+                  // get current conf from here (randomly choose one explorer)
+                  // check the distance against a anotherandom place.
+                  // if distance is lower than minimum distans permited, execute corrective action.
+                }
 			for (exID in csp_.range()) async {
 				
 				Logger.debug(()=>{"  HybridMultiWalks: explorer activity "+exID+" ready"});
@@ -108,71 +119,73 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 		return result;
 	}
 	
+	
 	public def kill() {
 		done=true;
-		for(i in solver.range())
-			solver(i).kill=true;
+		for (s in solver) s.kill=true;
 	}
 	
-	public def clear():void {
-		winnerLatch.set(false);
-		commM.restartPool();
-	}
+    public def clear():void {
+	    winnerLatch.set(false);
+	    commM.restartPool();
+    }
 	
-	/**
-	 * Called by winning place to set the stats at place zero so they
-	 * can be printed out.
-	 */
-	def setStats(ss:PlaceLocalHandle[ParallelSolverI(sz)], exID:Long, t:Long ){
-		val winPlace = here.id;
-		val time = t/1e9;
-		val iters = solver(exID).nbIterTot;
-		val locmin = solver(exID).nbLocalMinTot;
-		val swaps = solver(exID).nbSwapTot;
-		val reset = solver(exID).nbResetTot;
-		val same = solver(exID).nbSameVarTot;
-		val restart = solver(exID).nbRestart;
-		val change = solver(exID).nbChangeV;
+    /**
+     * Called by winning place to set the stats at place zero so they
+     * can be printed out.
+     */
+    def setStats(ss:PlaceLocalHandle[ParallelSolverI(sz)], exID:Long, t:Long ){
+	    val winPlace = here.id;
+	    val time = t/1e9;
+	    val iters = solver(exID).nbIterTot;
+	    val locmin = solver(exID).nbLocalMinTot;
+	    val swaps = solver(exID).nbSwapTot;
+	    val reset = solver(exID).nbResetTot;
+	    val same = solver(exID).nbSameVarTot;
+	    val restart = solver(exID).nbRestart;
+	    val change = solver(exID).nbChangeV;
 		
-		finish at (Place.FIRST_PLACE) async
-		ss().setStats(0n, winPlace as Int, exID as Int, time, iters, locmin, swaps, reset, same, restart, change,0n);
+	    finish at (Place.FIRST_PLACE) async
+	        ss().setStats(0n, winPlace as Int, exID as Int, time, iters, locmin, 
+	                      swaps, reset, same, restart, change,0n);
 	}
 	
-	public def printStats(count:Int):void {
-		stats.print(count);
-	}
+    public def printStats(count:Int):void {
+	    stats.print(count);
+    }
 	
-	public def printAVG( count:Int):void {
-		accStats.printAVG(count);
-	}
+    public def printAVG( count:Int):void {
+	    accStats.printAVG(count);
+    }
 	
-	public def setStats(co:Int, p:Int, e:Int, t: Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, fr:Int):void {
-		stats.setStats(co, p, e, t, it, loc, sw, re, sa, rs, ch, fr);
-		accStats(stats);
-	}
+    public def setStats(co:Int, p:Int, e:Int, t: Double, it:Int, loc:Int, sw:Int, re:Int, 
+			sa:Int, rs:Int, ch:Int, fr:Int):void {
+	    stats.setStats(co, p, e, t, it, loc, sw, re, sa, rs, ch, fr);
+	    accStats(stats);
+    }
 	
-	public def accStats(st:CSPStats):void {
-		accStats.accStats(st);
-	}
+    public def accStats(st:CSPStats):void {
+	    accStats.accStats(st);
+    }
 	
 	
-	// Communication functions
+    // Communication functions
 	
-	// public def communicate(var totalCost:Int, var variables:Rail[Int]{self.size==sz}) {
-	// 	ep.tryInsertVector(totalCost, variables, here.id  as Int);
-	// }
-	public def communicate(totalCost:Int, variables:Rail[Int]{self.size==sz}){
-		commM.communicate(totalCost, variables);
-	}
-	@Inline public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean 
-	= commM.getIPVector(csp_, myCost);
+    // public def communicate(var totalCost:Int, var variables:Rail[Int]{self.size==sz}) {
+    // 	ep.tryInsertVector(totalCost, variables, here.id  as Int);
+    // }
+    public def communicate(totalCost:Int, variables:Rail[Int]{self.size==sz}){
+	    commM.communicate(totalCost, variables);
+    }
+    @Inline public def getIPVector(csp_:ModelAS(sz), myCost:Int):Boolean 
+								 = commM.getIPVector(csp_, myCost);
 			
 	public def getPoolData():Maybe[CSPSharedUnit(sz)] {
 		// TODO: auto-generated method stub
 		return null;
 	}
 			
-	@Inline public def intraTI():Int = commM.intraTI;
+    @Inline public def intraTI():Int = commM.intraTI;
 	
 	public def tryInsertVector(var cost:Int, var variables:Rail[Int]{self.size==sz}, var place:x10.
 			lang.Int):void {
@@ -182,31 +195,16 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	public def getCurrentData():Maybe[CSPSharedUnit(sz)]{
 		val r = new Random();
 		val ex = r.nextLong(csp_.size);
-		val cspUnit = new CSPSharedUnit(csp_(ex).variables.size,solver(ex).total_cost,csp_(ex).variables,here.id as Int);
-		return new Maybe(cspUnit as CSPSharedUnit(sz));
+        var sol:CSPSharedUnit(sz) = new CSPSharedUnit(sz,solver(ex).total_cost,csp_(ex).variables, 
+             here.id as Int);
+		return new Maybe(sol);
 	}
 	
 	
 	val SLEEP_INTERVAL= 1000;
 	var done:Boolean=false;
 	def run(ss: PlaceLocalHandle[ParallelSolverI(sz)]): void {
-		async
-		while (! done) {
-			val r = new Random();
-			
-			//Runtime.worker().sleep(SLEEP_INTERVAL);
-			System.sleep(SLEEP_INTERVAL);
-			// woken up
-			Logger.debug(()=>{" CommManager - run : woken up"});
-			
-			
-			if(r.nextInt(100n) < 25n){
-				interTeamComm(ss);
-			}			
-			// get current conf from here (randomly choose one explorer)
-			// check the distance against a anotherandom place.
-			// if distance is lower than minimum distans permited, execute corrective action.
-		}
+		
 	}	
 	
 	public def interTeamComm(ss:PlaceLocalHandle[ParallelSolverI(sz)]){
@@ -237,17 +235,13 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 		}
 	}
 	
-	def distance(conf1 : Rail[Int], conf2 : Rail[Int]) : Double {
-		val sizeC = conf1.size as Int;
-		var i : Int = 0n;
+	def distance(conf1 : Valuation(sz), conf2 : Valuation(sz)) : Double {
 		var count : Int = 0n;
-		for (i = 0n; i < sizeC ; i++){
+		for (i in 0n..(sz as Int)){
 			//Logger.debug("comparing: "+conf1(i)+" - "+conf2(i));
-			if(conf1(i) == conf2(i)){
-				count++; 
-			}
+			if(conf1(i) == conf2(i)) count++; 
 		}
-		val dis = 1.0 - ( count as Double / sizeC );
+		val dis = 1.0 - ( count as Double / sz );
 		return dis;
 	} 
 }

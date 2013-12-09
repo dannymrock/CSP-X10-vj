@@ -43,16 +43,10 @@ public class StableMarriageAS extends ModelAS {
 		nbBPperMan = new Rail[Int](length,0n);
 		variablesW = new Rail[Int](length,0n);
 		initParameters();
-		
-		menPref = new Rail[Rail[Int]](length); 
-		var i:Long=0;
-		for( i=0; i<length; i++)
-			menPref(i) = new Rail[Int](r.randomPermut(length as Int,0n));
-		
-		womenPref = new Rail[Rail[Int]](length); 
-		for( i=0; i<length; i++)
-			womenPref(i) = new Rail[Int](r.randomPermut(length as Int,0n));
-				
+        val rr=r, l=length as Int;
+        menPref = new Rail[Rail[Int]](length, (Long) => new Rail[Int](rr.randomPermut(l, 0n)));
+        womenPref = new Rail[Rail[Int]](length, (Long) => new Rail[Int](rr.randomPermut(l, 0n)));
+
 		//printPreferencesTables();
 	}
 	
