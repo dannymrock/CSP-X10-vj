@@ -28,6 +28,10 @@ public class Main {
             if (kind==STABLE_MARRIAGE_PROBLEM) return new StableMarriageAS(vectorSize, seed);
             return new PartitAS(vectorSize, seed);
         }
+        public def make_SM(size:Long, vectorSize:Long, seed:Long, mPrefs:Rail[Rail[Int]],wPrefs:Rail[Rail[Int]])
+        	:ModelAS(vectorSize) {
+        	return new StableMarriageAS(vectorSize, seed, mPrefs, wPrefs);
+        }
     }
  
     public static val UNKNOWN_PROBLEM=0n;
@@ -40,6 +44,7 @@ public class Main {
 	
 	public static def main(args:Rail[String]):void{
 	
+		val r = new Random();
 		val opts = new OptionsParser(args, new Rail[Option](0L), [
 		    Option("p", "", "Problem Selection (magic-square, costas, all-interval or langford)"),
 		    Option("s", "", "Size of the problem"),
@@ -70,8 +75,8 @@ public class Main {
 
 		Console.OUT.println("CSP Problem: "+cspProblem+" Size: "+size+"\nNumber of repetitions: "+testNo+
 							"\nSolverMode: "+(solverMode==0n ?"Only Places":"Hybrid (Places and Activities)")+
-							"\nCommunication strategy: "+comm+"\nIntra-Team Comm. inteval: "+intraTI+"iterations"+
-							"\nInter-Team Comm. inteval: "+interTI+"milliseconds"+"\nMinimum permissible distance: "+minDistance+
+							"\nCommunication strategy: "+comm+"\nIntra-Team Comm. inteval: "+intraTI+" iterations"+
+							"\nInter-Team Comm. inteval: "+interTI+" ms"+"\nMinimum permissible distance: "+minDistance+
 							"\nPool Size: "+poolSize);
 		
 		var param : Int = UNKNOWN_PROBLEM;
@@ -105,15 +110,6 @@ public class Main {
 			Console.OUT.println("Error: Type a valid CSP example: magic-square"); 
 			return;
 		}
-		
-		// if(param==STABLE_MARRIAGE_PROBLEM){
-		// 	var x:StableMarriageAS(size as Long) = new StableMarriageAS(size,1);
-		// 	x.initialize(0n);
-		// 	x.printMatching();
-		// 	Console.OUT.println("Cost: "+x.costOfSolution(0n));
-		//      Console.OUT.println("Cost if swap 0 - 1: "+x.costIfSwap(0n,0n,1n));
-		// 	return;
-		// }
 		
 		/*
 		 *  Creating objects for solver execution
@@ -151,17 +147,30 @@ public class Main {
 			
 			//Solve the problem
 			//val stats:CSPStats;
-			val problem=param;
+			val problem = param;
 			val random = new Random();
 			val seed = random.nextLong();
-			val cspGen=():ModelAS(vectorSz)=> CSPProblem(problem).make(size as Long, vectorSz, seed);
+			val cspGen:()=>ModelAS(vectorSz);
+			if (problem==STABLE_MARRIAGE_PROBLEM){
+				val mPref = StableMarriageAS.createPrefs(size as Long, r.nextLong());
+				val wPref = StableMarriageAS.createPrefs(size as Long, 	r.nextLong());
+				cspGen=():ModelAS(vectorSz)=> CSPProblem(problem).make_SM(size as Long, vectorSz, seed, mPref, wPref);
+			}else{
+			
+				cspGen=():ModelAS(vectorSz)=> CSPProblem(problem).make(size as Long, vectorSz, seed);
+			}
+			
 			
 			Logger.debug(()=>" Start broadcatFlat: solvers().solve function ");
 			
 			
-			PlaceGroup.WORLD.broadcastFlat(()=>{
+			// PlaceGroup.WORLD.broadcastFlat(()=>{
+			// 	solvers().solve(solvers, cspGen);
+			// });
+			
+			finish for (p in Place.places()) at (p) async{
 				solvers().solve(solvers, cspGen);
-			});
+			}
 			
 			Logger.debug(()=>" End braodcastFlat: solvers().solve function");
 			
@@ -172,9 +181,10 @@ public class Main {
 			
 			Logger.debug(()=>" Start broadcatFlat: solvers().clear function ");
 			
-			PlaceGroup.WORLD.broadcastFlat(()=>{
+			
+			finish for (p in Place.places()) at (p) async{	
 				solvers().clear();
-			});
+			}
 
 			Logger.debug(()=>" Start broadcatFlat: solvers().clear function ");
 		}

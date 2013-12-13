@@ -87,7 +87,7 @@ public class ASSolverPermut(sz:Long, size:Int, seed:Long, solver:ParallelSolverI
 			if (solverP.nbVarToReset < 2n)
 			{
 				solverP.nbVarToReset = 2n;
-				//Console.OUT.printf("increasing nb var to reset since too small, now = %d\n", solverP.nbVarToReset);
+				Logger.debug(()=>{"increasing nb var to reset since too small, now = "+ solverP.nbVarToReset});
 			}
 		}
 		

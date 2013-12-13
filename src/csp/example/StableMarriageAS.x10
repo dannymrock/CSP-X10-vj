@@ -1,7 +1,7 @@
 package csp.example;
 import csp.solver.ModelAS;
 import x10.array.Array_2;
-import csp.util.Utils;
+import csp.util.*;
 
 public class StableMarriageAS extends ModelAS {
 	/** number of blocking pairs
@@ -10,29 +10,8 @@ public class StableMarriageAS extends ModelAS {
 	
 	val nbBPperMan : Rail[Int];
 	val variablesW : Rail[Int];
+    val err : Rail[Int];
 	
-	/**
-	 * Preference table for stable marriage problem
-	 */
-	// //Paper data
-	// val menPref = [[4n,6n,0n,1n, 5n,7n,3n,2n],
-	//               [1n,2n,6n,4n,3n,0n,7n,5n],
-	//               [7n,4n,0n,3n,5n,1n,2n,6n],
-	//               [2n,1n,6n,3n,0n,5n,7n,4n],
-	//               [6n,1n,4n,0n,2n,5n,7n,3n],
-	//               [0n,5n,6n,4n,7n,3n,1n,2n],
-	//               [1n,4n,6n,5n,2n,3n,7n,0n],
-	//               [2n,7n,3n,4n,6n,1n,5n,0n]];
-	// val womenPref = [[4n,2n,6n,5n,0n,1n,7n,3n],
-	//              [7n,5n,2n,4n,6n,1n,0n,3n],
-	//              [0n,4n,5n,1n,3n,7n,6n,2n],
-	//              [7n,6n,2n,1n,3n,0n,4n,5n],
-	//              [5n,3n,6n,2n,7n,0n,1n,4n],
-	//              [1n,7n,4n,3n,5n,2n,6n,0n],
-	//              [6n,4n,1n,0n,7n,5n,3n,2n],
-	//              [6n,3n,0n,4n,1n,2n,5n,7n]];
-
-	// val a : Rail[Rail[Long]{self!=null}] = [[1,2,3],[4,5, ]];
 	val menPref : Rail[Rail[Int]];
 	
 	val womenPref : Rail[Rail[Int]];
@@ -42,6 +21,7 @@ public class StableMarriageAS extends ModelAS {
 		nbBlockingPairs = 0n;
 		nbBPperMan = new Rail[Int](length,0n);
 		variablesW = new Rail[Int](length,0n);
+        err = new Rail[Int](length,0n);
 		initParameters();
         val rr=r, l=length as Int;
         menPref = new Rail[Rail[Int]](length, (Long) => new Rail[Int](rr.randomPermut(l, 0n)));
@@ -50,44 +30,46 @@ public class StableMarriageAS extends ModelAS {
 		//printPreferencesTables();
 	}
 	
+	public def this (lengthProblem : Long , seed : Long, mPrefs:Rail[Rail[Int]],wPrefs:Rail[Rail[Int]]):
+		StableMarriageAS(lengthProblem){
+		super(lengthProblem, seed );
+		nbBlockingPairs = 0n;
+		nbBPperMan = new Rail[Int](length,0n);
+		variablesW = new Rail[Int](length,0n);
+		err = new Rail[Int](length,0n);
+		initParameters();
+		val rr=r, l=length as Int;
+		menPref = mPrefs;
+		womenPref = wPrefs;
+		//Logger.info(()=>{"Preferences"});
+		//printPreferencesTables();
+	}
+
+	// public def setPrefs(mPrefs:Rail[Rail[Int]],wPrefs:Rail[Rail[Int]]){
+	// 	menPref = mPrefs;
+	// 	womenPref = wPrefs;		
+	// }
+	
+	
+	
 	
 	/** initParameters
 	 *  It is necessary to fine tune the parameters for this problem
 	 */
 	private def initParameters(){
 		
-		solverParams.probSelectLocMin =  50n;
-		solverParams.freezeLocMin = 8n;
+		solverParams.probSelectLocMin =  200n; // try ~80%  
+		solverParams.freezeLocMin = 1n;
 		solverParams.freezeSwap = 0n;
-		solverParams.resetLimit = 1n;
+		solverParams.resetLimit =2n; //may be 1 is better for size 30 try()
 		solverParams.resetPercent = 4n;
-		solverParams.restartLimit = 1000000n;
+		solverParams.restartLimit = 1000000000n;
 		solverParams.restartMax = 0n;
 		solverParams.baseValue = 0n;
-		solverParams.exhaustive = true;
+		solverParams.exhaustive = false;
 		solverParams.firstBest = false;
 		
-		// solverParams.probSelectLocMin = 66n;
-		// solverParams.freezeLocMin = 1n;
-		// solverParams.freezeSwap = 0n;
-		// solverParams.resetLimit = 5n;
-		// solverParams.resetPercent = 25n;
-		// solverParams.restartLimit = 100n;
-		// solverParams.restartMax = 10n;
-		// solverParams.baseValue = 0n;
-		// solverParams.exhaustive = false;
-		// solverParams.firstBest = false;
-	
-		// solverParams.probSelectLocMin = 6n;
-		// solverParams.freezeLocMin = 5n;
-		// solverParams.freezeSwap = 0n;
-		// solverParams.resetLimit = length/2n;
-		// solverParams.resetPercent = 10n;
-		// solverParams.restartLimit = 1000n;
-		// solverParams.restartMax = 10n;
-		// solverParams.baseValue = 0n;
-		// solverParams.exhaustive = true;
-		// solverParams.firstBest = true;
+	    solverParams.probChangeVector = 50n;
 	}
 	
 	/**
@@ -95,64 +77,41 @@ public class StableMarriageAS extends ModelAS {
 	 * 	count the number of blocking pairs for the current Match
 	 * 	@return cost
 	 */
-	public def costOfSolution( shouldBeRecorded : Int ) : Int {
-		// nbBlockingPairs = 0n;
-		// nbBPperMan.clear();
-		// var m:Int;
-		// //pw : M-partner of w
-		// var pw:Int;
-		// //pm : M-partner of m
-		// var pm:Int;
-		// //For each man
-		// for(m=0n; m<length;m++){
-		// 	pm = variables(m);
-		// 	// Obtain prefereces of this man
-		// 	val manPref = menPref(m); 
-		// 	// for each w such that m prefers w to pm
-		// 	for(w in manPref){
-		// 		if(w==pm) break;
-		// 		//if w prefers m to pw is a BP
-		// 		//finding current w partner (index in variables)
-		// 		pw = find(variables,w);
-		// 		val womanPref = womenPref(w);
-		// 		var j:Int=0n;
-		// 		for(m1 in womanPref){
-		// 			if (m1==pw) break;
-		// 			if(m1==m){
-		// 				nbBlockingPairs++;
-		// 				nbBPperMan(m)++;
-		// 			}
-		// 		}
-		// 	}Int
-		// }
-		// return nbBlockingPairs;
-		
-		
-		var w:Int, m1:Int;
-		var i:Int, j:Int;
-		var pm:Int, pw:Int; //w_of_m, m_of_w;
-		var r:Int = 0n;
-
-		if(shouldBeRecorded==1n) nbBPperMan.clear();
-		for (m in variables.range())
-			variablesW(variables(m)) = m as Int;
-		
-		
-		for (m in variables.range()){
-			pm = variables(m);
-			for(i = 0n; (w = menPref(m)(i)) != pm; i++){
-				pw = variablesW(w);
-				for(j = 0n; (m1 = womenPref(w)(j)) != pw; j++){
-					if (m1 == m as Int){
-						r++;
-						if(shouldBeRecorded==1n)nbBPperMan(m)++;
-					}
-				}
-				
-			}
-		}
-		return r;
-	}
+     public def costOfSolution( shouldBeRecorded : Int ) : Int {	
+         var w:Int, m1:Int;
+         var i:Int, j:Int;
+         var pm:Int, pw:Int; //w_of_m, m_of_w;
+         var r:Int = 0n;
+       
+         err.clear();
+         for (m in variables.range())
+             variablesW(variables(m)) = m as Int;
+         
+         for (m in variables.range()){
+        	 pm = variables(m);
+        	 loop: for(i = 0n; (w = menPref(m)(i)) != pm; i++){
+        		 pw = variablesW(w);
+        		 for(j = 0n; (m1 = womenPref(w)(j)) != pw; j++){
+        			 if (m1 == m as int){
+        				 var endJ:Int;
+        				 for(endJ = j; womenPref(w)(endJ) != pw; endJ++)
+        				 { }
+        				 val z = endJ - j;
+        				 if (z > err(m)) {
+        					 r += j as Int + 1n;
+        					 err(m) = z; //z*z;
+        					 // printf("j=%d  i=%d  m=%d\n", j, i, m);
+        				 }
+        				 //goto undominated_only;
+        				 //break;
+        				 break loop;
+        			 }
+        		 }
+        	 }
+        	 //undominated_only:
+         }
+         return r;	
+     }
 	
 	/** 
 	 * 	costOnVariable( i : Int ) : Int
@@ -161,7 +120,7 @@ public class StableMarriageAS extends ModelAS {
 	 *  @return Int value with the cost of this variable
 	 */
 	public def costOnVariable( i : Int ) : Int{		
-		return nbBPperMan(i);
+		return err(i);
 	}
 	
 	/**
@@ -175,20 +134,11 @@ public class StableMarriageAS extends ModelAS {
 		this.costOfSolution(1n);
 	}
 	
-	
-	public def find(vec:Rail[Int],value:Int):Int{
-		var i :Int=0n;
-		for(i=0n;i<vec.size ;i++)
-			if (vec(i)==value) return i;
-		Console.OUT.println("Error: value not found!!!");
-		return -1n;
-	}
-	
 	public def displaySolution(){
 		var i:Int=0n;
-		Console.OUT.println("\nMatching  m -> w:");
+		Console.OUT.println("\nMatching  m->w:");
 		for (i=0n; i<length;i++){
-			Console.OUT.print(i+" -> "+variables(i)+"\t");
+			Console.OUT.print(i+"->"+variables(i)+"   ");
 		}
 		Console.OUT.println(" ");
 	}
@@ -269,6 +219,13 @@ public class StableMarriageAS extends ModelAS {
 			Console.OUT.println("");
 		}
 	}
+	
+	static def createPrefs(l:Long,seed:Long):Rail[Rail[Int]]{
+		val r = new RandomTools(seed);
+		val prefs = new Rail[Rail[Int]](l, (Long) => new Rail[Int](r.randomPermut(l, 0n)));
+		return prefs;
+	}
+	
 }
 
 public type StableMarriageAS(s:Long)=StableMarriageAS{self.sz==s};

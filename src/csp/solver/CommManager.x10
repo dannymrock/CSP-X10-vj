@@ -63,9 +63,8 @@ public class CommManager(sz:Long, poolSize:Int) {
 		//commOption = cOption;
 		nbTeams = nT;
 		myTeamId = here.id as Int % nbTeams;
-		val m = myTeamId; //???
-		val s = solverMode;
-		
+
+		val m = myTeamId; val s = solverMode;
 		Logger.debug(()=>{(s==0n ? ("My team is: " + m):("My team is:"+here.id))});
 		
 	}
@@ -80,10 +79,7 @@ public class CommManager(sz:Long, poolSize:Int) {
 	 * 
 	 */
 	public def communicate(totalCost : Int, variables : Rail[Int]{self.size==sz} ) {
-	    // if (commOption==NO_COMM) { 
-	    //     return;
-	    // }
-	    Logger.debug(()=>" communicate: entering.");
+		Logger.debug(()=>" communicate: entering.");
 	    val placeid = here.id as Int;
 	    if (solverMode == USE_PLACES) {
 	    	/************************** Comm Places *******************************/
@@ -97,7 +93,7 @@ public class CommManager(sz:Long, poolSize:Int) {
 	    		ep.tryInsertVector( totalCost , variables, placeid);
 	    	}else{
 	    		Logger.debug(()=>"CommManager: try to insert in remote place: "+Place(myTeamId));
-	    		finish at(Place(myTeamId)) async ss().tryInsertVector( totalCost , variables, placeid);
+	    		at(Place(myTeamId)) async ss().tryInsertVector( totalCost , variables, placeid);
 	    	}
 	    	//Debug
 	    	// if(here.id  == myGryoupId){ //group heed
@@ -132,7 +128,7 @@ public class CommManager(sz:Long, poolSize:Int) {
 			if (place == here )
 				a = ep.getRemoteData();
 			else{
-				finish a = at(place) ss().getPoolData();
+				 a = at(place) ss().getPoolData();
 			}
 			//if (place.id==0)Console.OUT.println(here+" comm to "+place+" and get "+a().cost);
 			if ( a!=null && (myCost + delta) > a().cost ){					 

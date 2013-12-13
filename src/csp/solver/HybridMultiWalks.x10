@@ -11,7 +11,7 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	
     //Hybrid approach
     val nbExplorerPT : Int;
-    val nTeams : Int;
+    //val nTeams : Int;
     
     val stats = new CSPStats();
     val accStats = new CSPStats();
@@ -42,7 +42,7 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 		interTeamInterval = interTI;
 		 
 		nbExplorerPT = npT; // will be a parameter 
-		nTeams = Place.MAX_PLACES as Int / nbExplorerPT;
+		//nTeams = Place.MAX_PLACES as Int / nbExplorerPT;
 		// Arrays with the problems and solver to be dsitributed at each activity
 		csp_ = new Rail[ModelAS(sz)](nbExplorerPT);
 		solver = new Rail[ASSolverPermut(sz)](nbExplorerPT);
@@ -57,7 +57,7 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	    var extTime : Long = -System.nanoTime();
 		
 	    var nsize:Int = size;
-	    commM = new CommManager(sz, 1n, solvers, updateI,0n, poolSize, nTeams );
+	    commM = new CommManager(sz, 1n, solvers, updateI,0n, poolSize, Place.MAX_PLACES as Int );
 	    val ss = st() as ParallelSolverI(sz);
 
 	    Logger.debug(()=>{"  HybridMultiWalks: spawning explorer activities "});
@@ -82,8 +82,7 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 					
 					Logger.debug(()=>{"  HybridMultiWalks: explorer activity "+exID+" has found a solution"});
 					val home = here.id;
-					val winner:Boolean;
-					finish winner = at(Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
+					val winner = at(Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
 					
 					//winPlace = here;
 					//bcost = cost;
@@ -139,7 +138,7 @@ public class HybridMultiWalks (sz:Long,poolSize:Int) implements ParallelSolverI 
 	    val restart = solver(exID).nbRestart;
 	    val change = solver(exID).nbChangeV;
 		
-	    finish at (Place.FIRST_PLACE) async
+	    at (Place.FIRST_PLACE) async
 	        ss().setStats(0n, winPlace as Int, exID as Int, time, iters, locmin, 
 	                      swaps, reset, same, restart, change,0n);
 	}

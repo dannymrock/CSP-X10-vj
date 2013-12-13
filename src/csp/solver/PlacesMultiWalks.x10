@@ -110,8 +110,7 @@ public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {
 	    // Light the candles! Kill the blighters!
 	    val home = here.id;
 		    
-	    val winner:Boolean;
-	    finish winner = at(Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
+	    val winner = at(Place.FIRST_PLACE) solvers().announceWinner(solvers, home);
 		    
 	    //winPlace = here;
 	    bcost = cost;
@@ -121,7 +120,7 @@ public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {
 		setStats(solvers);
 		//Utils.show("Solution is " + (csp_.verified()? "ok" : "WRONG") , csp_.variables);
 		Console.OUT.println("Solution is " + (csp_.verified()? "ok" : "WRONG"));
-		csp_.displaySolution();
+		//csp_.displaySolution();
 	    }
 	}
 	extTime += System.nanoTime();
@@ -143,44 +142,44 @@ public class PlacesMultiWalks(sz:Long,poolSize:Int) implements ParallelSolverI {
 	
 	//val monitor = new Monitor("PlacesMultiWalks"); 
 	public def kill() {
-	        solver.kill=true;
+		solver.kill=true;
 	}
     val winnerLatch = new AtomicBoolean(false);
     public def announceWinner(ss:PlaceLocalHandle[ParallelSolverI(sz)], p:Long):Boolean {
-	val result = winnerLatch.compareAndSet(false, true);
-	   
-	Logger.debug(()=> "  PlacesMultiWalks: announceWinner result=" + result + " for " + p + " this=" + this );
-	if (result) {
-	    for (k in Place.places()) 
-		if (p != k.id) 
-		    at(k) async ss().kill();
-	}
-	return result;
+    	val result = winnerLatch.compareAndSet(false, true);
+    	
+    	Logger.debug(()=> "  PlacesMultiWalks: announceWinner result=" + result + " for " + p + " this=" + this );
+    	if (result) {
+    		for (k in Place.places()) 
+    			if (p != k.id) 
+    				at(k) async ss().kill();
+    	}
+    	return result;
     }
     /**
      * Called by winning place to set the stats at place zero so they
      * can be printed out.
      */
     def setStats(ss:PlaceLocalHandle[ParallelSolverI(sz)]  ){
-	val winPlace = here.id;
-	val time = time/1e9;
-	val iters = solver.nbIterTot;
-	val locmin = solver.nbLocalMinTot;
-	val swaps = solver.nbSwapTot;
-	val reset = solver.nbResetTot;
-	val same = solver.nbSameVarTot;
-	val restart = solver.nbRestart;
-	val change = solver.nbChangeV;
-	
-	finish at (Place.FIRST_PLACE) async
-	    ss().setStats(0n, winPlace as Int, 0n, time, iters, locmin, swaps, reset, same, restart, change,0n);
+    	val winPlace = here.id;
+    	val time = time/1e9;
+    	val iters = solver.nbIterTot;
+    	val locmin = solver.nbLocalMinTot;
+    	val swaps = solver.nbSwapTot;
+    	val reset = solver.nbResetTot;
+    	val same = solver.nbSameVarTot;
+    	val restart = solver.nbRestart;
+    	val change = solver.nbChangeV;
+    	
+    	at (Place.FIRST_PLACE) async
+    	ss().setStats(0n, winPlace as Int, 0n, time, iters, locmin, swaps, reset, same, restart, change,0n);
     }
     public def setStats(co : Int, p : Int, e : Int, t:Double, it:Int, loc:Int, sw:Int, re:Int, sa:Int, rs:Int, ch:Int, 
-			fr : Int) {
-	stats.setStats(co, p, e, t, it, loc, sw, re, sa, rs, ch, fr);
-	accStats(stats);
+    		fr : Int) {
+    	stats.setStats(co, p, e, t, it, loc, sw, re, sa, rs, ch, fr);
+    	accStats(stats);
     }
-	
+    
 	public def printStats(count:Int):void {
 	    stats.print(count);
 	}
