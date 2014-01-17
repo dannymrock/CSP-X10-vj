@@ -61,7 +61,7 @@ public class StableMarriageAS extends ModelAS {
 		solverParams.probSelectLocMin =  200n; // try ~80%  
 		solverParams.freezeLocMin = 1n;
 		solverParams.freezeSwap = 0n;
-		solverParams.resetLimit =2n; //may be 1 is better for size 30 try()
+		solverParams.resetLimit =1n; //may be 1 is better for size 30 try()
 		solverParams.resetPercent = 4n;
 		solverParams.restartLimit = 1000000000n;
 		solverParams.restartMax = 0n;
@@ -70,6 +70,27 @@ public class StableMarriageAS extends ModelAS {
 		solverParams.firstBest = false;
 		
 	    solverParams.probChangeVector = 50n;
+	}
+	
+	
+	/**
+	 * Returns the error if (m,w) forms a BP (0 else)
+	 */
+	public def blockingPairError(w:Int, pw:Int, m:Int) : Int{
+		var m1:Int;
+		var err:Int = 0n;
+
+		for(var j:Int = 0n; (m1 = womenPref(w)(j)) != pw; j++)
+		{
+			if (m1 == m)      /* (m,w) is a BP (blocking pair) */
+			{
+				while(womenPref(w)(j + err) != pw)
+					err++;
+				break;
+			}
+		}
+
+		return err;
 	}
 	
 	/**
@@ -89,26 +110,40 @@ public class StableMarriageAS extends ModelAS {
          
          for (m in variables.range()){
         	 pm = variables(m);
-        	 loop: for(i = 0n; (w = menPref(m)(i)) != pm; i++){
+        	 var errM:Int = 0n;
+        	 var bpM:Int = -1n;		/* NB: -1 to avoid false positive in the test of Cost_If_Swap */
+        	 
+        	 for(i = 0n; (w = menPref(m)(i)) != pm; i++){
         		 pw = variablesW(w);
-        		 for(j = 0n; (m1 = womenPref(w)(j)) != pw; j++){
-        			 if (m1 == m as int){
-        				 var endJ:Int;
-        				 for(endJ = j; womenPref(w)(endJ) != pw; endJ++)
-        				 { }
-        				 val z = endJ - j;
-        				 if (z > err(m)) {
-        					 r += j as Int + 1n;
-        					 err(m) = z; //z*z;
-        					 // printf("j=%d  i=%d  m=%d\n", j, i, m);
-        				 }
-        				 //goto undominated_only;
-        				 //break;
-        				 break loop;
-        			 }
+        		 var e:Int = blockingPairError(w, pw, m as Int);
+        		 // for(j = 0n; (m1 = womenPref(w)(j)) != pw; j++){
+        			//  if (m1 == m as int){
+        			// 	 var endJ:Int;
+        			// 	 for(endJ = j; womenPref(w)(endJ) != pw; endJ++)
+        			// 	 { }
+        			// 	 val z = endJ - j;
+        			// 	 if (z > err(m)) {
+        			// 		 r += j as Int + 1n;
+        			// 		 err(m) = z; //z*z;
+        			// 		 // printf("j=%d  i=%d  m=%d\n", j, i, m);
+        			// 	 }
+        			// 	 //goto undominated_only;
+        			// 	 //break;
+        			// 	 break loop;
+        			//  }
+        		 // }
+        		 
+        		 
+        		 if (e > errM){
+        			 errM = e;
+        			 bpM = pw;
+        			 r++;              /* count the errors (number of BP) */
         		 }
         	 }
-        	 //undominated_only:
+        	 if (shouldBeRecorded != 0n){
+        		 err(m) = errM;
+        		 //bp(m) = bpM;
+        	 }
          }
          return r;	
      }

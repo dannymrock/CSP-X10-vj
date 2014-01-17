@@ -59,7 +59,7 @@ public class Main {
 		    Option("d", "", "minimum permisible distance.")
 		    ]);
 		
-		val cspProblem  = opts("-p", "magic-square");
+		val cspProblem  = opts("-p", "MSP");
 		val size        = opts("-s", 10n);
 		val testNo      = opts("-b", 10n);
 		val solverMode  = opts("-m", 0n);
@@ -82,32 +82,32 @@ public class Main {
 		var param : Int = UNKNOWN_PROBLEM;
 		//var file : String = "";
 				
-		if (cspProblem.equalsIgnoreCase("magic-square")) {
-			//Console.OUT.println("Magic Square Problem");
+		if (cspProblem.equalsIgnoreCase("MSP")) {
+			Logger.debug(()=>{"Magic Square Problem"});
 			param = MAGIC_SQUARE_PROBLEM;
 			vectorSize= size*size;
-		} else if(cspProblem.equals("costas")){
-			//Console.OUT.println("Costas Array Problem");
+		} else if(cspProblem.equals("CAP")){
+			Logger.debug(()=>{"Costas Array Problem"});
 			param = COSTAS_PROBLEM;
 			vectorSize= size;
-		} else if(cspProblem.equals("all-interval")){
-			//Console.OUT.println("All-Interval Array Problem");
+		} else if(cspProblem.equals("AIP")){
+			Logger.debug(()=>{"All-Interval Array Problem"});
 			param = ALL_INTERVAL_PROBLEM;
 			vectorSize=size;
-		} else if(cspProblem.equals("langford")){
-			//Console.OUT.println("Langford Pairing Problem");
+		} else if(cspProblem.equals("LNP")){
+			Logger.debug(()=>{"Langford Pairing Problem"});
 			param = LANGFORD_PROBLEM;
 			vectorSize=2*size;
-		} else if(cspProblem.equals("partit")){
-			//Console.OUT.println("Number Partition Problem");
+		} else if(cspProblem.equals("NPP")){
+			Logger.debug(()=>{"Number Partition Problem"});
 			param = PARTIT_PROBLEM;
 			vectorSize=size;
-		} else if(cspProblem.equals("stable-marriage")){
-			//Console.OUT.println("Number Partition Problem");
+		} else if(cspProblem.equals("SMP")){
+			Logger.debug(()=>{"Stable Marriage Problem"});
 			param = STABLE_MARRIAGE_PROBLEM;
 			vectorSize=size;
 		} else{
-			Console.OUT.println("Error: Type a valid CSP example: magic-square"); 
+			Console.OUT.println("Error: Type a valid CSP example: MSP, CAP, AIP, LNP, NPP o SMP"); 
 			return;
 		}
 		
@@ -116,9 +116,6 @@ public class Main {
 		 */
 		val accStats = new CSPStats();
 		val vectorSz = vectorSize;
-		// val solvers = PlaceLocalHandle.make[ParallelSolverI(vectorSz)](PlaceGroup.WORLD, 
-		//         ()=>new ASSolverPermutRW(vectorSz, intraTI, comm, threads, poolSize, nodesPTeam) as ParallelSolverI(vectorSz)); 
-		//val solverT = new CooperativeMW(intraTI, interTI, threads, poolSize, nodesPTeam, minDistance);
 		val solvers:PlaceLocalHandle[ParallelSolverI(vectorSz)];
 		if (solverMode == 0n){
 			Console.OUT.println("Using multi-walks with "+Place.MAX_PLACES+" Places");
